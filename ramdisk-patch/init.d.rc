@@ -1,6 +1,0 @@
-# Example init.d support
-
-# Execute files in /system/etc/init.d before booting
-service run-parts /sbin/busybox run-parts /system/etc/init.d
-    class main
-    oneshot

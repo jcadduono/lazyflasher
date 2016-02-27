@@ -1,12 +1,13 @@
 #!/sbin/sh
 # LazyFlasher boot image patcher script by jcadduono
 
-tmp=/tmp/lazyflasher
+tmp=/tmp/no-verity-opt-encrypt
 
 console=$(cat /tmp/console)
 [ "$console" ] || console=/proc/$$/fd/1
 
-. $tmp/config.sh
+cd "$tmp"
+. config.sh
 
 chmod -R 755 $bin
 rm -rf $ramdisk $split_img

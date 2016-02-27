@@ -1,7 +1,7 @@
 #!/sbin/sh
 # LazyFlasher installer backend
 
-tmp=/tmp/lazyflasher
+tmp=/tmp/no-verity-opt-encrypt
 
 [ "$3" ] && {
 	zip=$3
@@ -29,17 +29,7 @@ abort() {
 }
 
 cleanup() {
-	rm /system/.rw
-	rm /data/.rw
-
-	umount /system
-	umount /data
-
 	[ "$zip" ] && rm /tmp/console
-}
-
-install() {
-	cp -r "$tmp$1" "$(dirname "$1")"
 }
 
 extract() {
@@ -53,14 +43,10 @@ setperm() {
 	find "$3" -type f -exec chmod "$2" {} \;
 }
 
-mount() {
-	mountpoint -q "$1" || /sbin/busybox mount -o rw "$1" || abort "Unable to mount $1 as rw!"
-	>> "$1/.rw" && return || /sbin/busybox mount -o remount,rw "$1"
-	>> "$1/.rw" && return || abort "Unable to write to $1!"
-}
-
 print "#######################################"
-print "#           LazyFlasher 1.0           #"
+print "#    dm-crypt and force encryption    #"
+print "#        disabler by jcadduono        #"
+print "#             version 1.0             #"
 print "#######################################"
 
 command -v getprop || {
@@ -89,23 +75,12 @@ cd "$tmp"
 
 . config.sh
 
-mount /system
-mount /data
-
 setperm 0755 0755 "$bin"
 
 print "Running boot image patcher..."
 sh boot-patcher.sh || abort
 
-[ -d "$tmp/system" ] && {
-	print "Copying files to /system..."
-	install "/system"
-}
-
-[ -d "$tmp/data" ] && {
-	print "Copying files to /data..."
-	install "/data"
-}
+print "Boot image patching complete"
 
 cleanup
-print "Boot image patching complete"
+print "Done installing!"

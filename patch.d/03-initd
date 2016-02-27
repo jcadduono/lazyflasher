@@ -1,8 +1,0 @@
-#!/sbin/sh
-
-. "$env"
-
-print "Injecting init.d support into init.rc..."
-
-# import /init.d.rc from init.rc
-insert_after_last init.rc "import /init\\..*\\.rc" "import /init.d.rc"
