@@ -1,0 +1,8 @@
+#!/sbin/sh
+
+. "$env"
+
+print "Applying patch files to the ramdisk..."
+
+# recursively copy files from ramdisk_patch folder into ramdisk, overwriting older files
+cp -rd $ramdisk_patch/. ./
