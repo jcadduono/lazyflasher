@@ -3,8 +3,6 @@
 
 tmp=/tmp/lazyflasher
 
-. $tmp/config.sh
-
 [ "$3" ] && {
 	zip=$3
 	console=/proc/$$/fd/$2
@@ -88,6 +86,8 @@ command -v getprop || {
 	extract "$zip" "$tmp"
 }
 cd "$tmp"
+
+. config.sh
 
 mount /system
 mount /data
