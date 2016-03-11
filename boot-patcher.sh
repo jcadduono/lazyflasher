@@ -189,13 +189,6 @@ build_boot() {
 	}
 }
 
-# backup old boot image
-backup_boot() {
-	print "Backing up old boot image to $boot_backup..."
-	mkdir -p "$(dirname $boot_backup)"
-	cp -f $tmp/boot.img $boot_backup
-}
-
 # write the new boot image to boot block
 write_boot() {
 	print "Writing new boot image to memory..."
@@ -219,8 +212,6 @@ patch_ramdisk
 build_ramdisk
 
 build_boot
-
-backup_boot
 
 write_boot
 
