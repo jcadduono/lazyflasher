@@ -1,7 +1,7 @@
 #!/sbin/sh
 # LazyFlasher installer backend
 
-tmp=/tmp/no-verity-opt-encrypt
+tmp=/tmp/system-supersu
 
 [ "$3" ] && {
 	zip=$3
@@ -29,6 +29,8 @@ abort() {
 }
 
 cleanup() {
+	rm /system/.rw
+	umount /system
 	[ "$zip" ] && rm /tmp/console
 }
 
@@ -43,10 +45,16 @@ setperm() {
 	find "$3" -type f -exec chmod "$2" {} \;
 }
 
+mount() {
+	mountpoint -q "$1" || /sbin/busybox mount -o rw "$1" || abort "Unable to mount $1 as rw!"
+	>> "$1/.rw" && return || /sbin/busybox mount -o remount,rw "$1"
+	>> "$1/.rw" && return || abort "Unable to write to $1!"
+}
+
 print "#######################################"
-print "#    dm-crypt and force encryption    #"
-print "#        disabler by jcadduono        #"
-print "#             version 1.0             #"
+print "#     system mode SuperSU patcher     #"
+print "#      by jcadduono, version 1.0      #"
+print "#         using SuperSU 2.70          #"
 print "#######################################"
 
 command -v getprop || {
@@ -75,7 +83,23 @@ cd "$tmp"
 
 . config.sh
 
+mount /system
+
+print "Detected architecture: $arch"
+
 setperm 0755 0755 "$bin"
+
+print "Installing SuperSU policy binaries..."
+setperm 0755 0755 arch
+rm -f "/system/xbin/supolicy" "$libdir/libsupol.so"
+cp "arch/$arch/supolicy" "/system/xbin/"
+cp "arch/$arch/libsupol.so" "$libdir/"
+
+print "Setting SuperSU install mode to system..."
+cat > "/system/.supersu" << EOF
+SYSTEMLESS=false
+PATCHBOOTIMAGE=false
+EOF
 
 print "Running boot image patcher..."
 sh boot-patcher.sh || abort

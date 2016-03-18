@@ -1,0 +1,16 @@
+#!/sbin/sh
+
+. "$env"
+
+[ -f "$ramdisk/sepolicy" ] && {
+	print "Patching the sepolicy for SuperSU..."
+	LD_LIBRARY_PATH="$libdir" /system/xbin/supolicy --file "$ramdisk/sepolicy" "$ramdisk/sepolicy_1"
+}
+[ -f "$ramdisk/sepolicy_1" ] && {
+	rm "$ramdisk/sepolicy"
+	mv "$ramdisk/sepolicy_1" "$ramdisk/sepolicy"
+	chmod 0644 "$ramdisk/sepolicy"
+	print "Success!"
+} || {
+	abort "Unable to patch the sepolicy!"
+}

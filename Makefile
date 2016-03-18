@@ -1,4 +1,4 @@
-ZIP := no-verity-opt-encrypt.zip
+ZIP := system-supersu.zip
 
 EXCLUDE := Makefile *.git*
 
