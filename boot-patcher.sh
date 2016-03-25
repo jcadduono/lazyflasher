@@ -20,7 +20,7 @@ print() {
 
 abort() {
 	[ "$1" ] && {
-		print "Error: $1"
+		print "Error: $1!"
 		print "Aborting..."
 	}
 	exit 1
@@ -31,6 +31,7 @@ abort() {
 # find the location of the boot block
 find_boot() {
 	verify_block() {
+		boot_block=$(readlink -f $boot_block)
 		[ -b "$boot_block" ] || return 1
 		print "Found boot partition at: $boot_block"
 	}
@@ -70,27 +71,30 @@ find_boot() {
 		[ "$boot_block" ] && verify_block && return
 		return 1
 	} && return
-	abort "Unable to find boot block location!"
+	abort "Unable to find boot block location"
 }
 
-# dump boot and extract ramdisk
+# dump boot and unpack the android boot image
 dump_boot() {
 	print "Dumping & unpacking original boot image..."
-	dd if="$boot_block" of="$tmp/boot.img"
-	$bin/unpackbootimg -i "$tmp/boot.img" -o "$split_img"
-	[ $? != 0 ] && abort "Dumping/unpacking boot image failed"
+	dump_image "$boot_block" "$tmp/boot.img" || {
+		abort "Unable to read boot partition"
+	}
+	$bin/unpackbootimg -i "$tmp/boot.img" -o "$split_img" || {
+		abort "Unpacking boot image failed"
+	}
 }
 
 # determine the format the ramdisk was compressed in
 determine_ramdisk_format() {
 	magicbytes=$(hexdump -vn2 -e '2/1 "%x"' $split_img/boot.img-ramdisk)
 	case "$magicbytes" in
-		425a) rdformat=bzip2; decompress=bzip2 ;; #compress="bzip2 -9c" ;;
-		1f8b|1f9e) rdformat=gzip; decompress=gzip ;; #compress="gzip -9c" ;;
-		0221) rdformat=lz4; decompress=$bin/lz4 ;; #compress="$bin/lz4 -9" ;;
-		5d00) rdformat=lzma; decompress=lzma ;; #compress="lzma -c" ;;
-		894c) rdformat=lzo; decompress=lzop ;; #compress="lzop -9c" ;;
-		fd37) rdformat=xz; decompress=xz ;; #compress="xz --check=crc32 --lzma2=dict=2MiB" ;;
+		425a) rdformat=bzip2; decompress=bzip2 ; compress="gzip -9c" ;; #compress="bzip2 -9c" ;;
+		1f8b|1f9e) rdformat=gzip; decompress=gzip ; compress="gzip -9c" ;;
+		0221) rdformat=lz4; decompress=$bin/lz4 ; compress="$bin/lz4 -9" ;;
+		5d00) rdformat=lzma; decompress=lzma ; compress="gzip -9c" ;; #compress="lzma -c" ;;
+		894c) rdformat=lzo; decompress=lzop ; compress="gzip -9c" ;; #compress="lzop -9c" ;;
+		fd37) rdformat=xz; decompress=xz ; compress="gzip -9c" ;; #compress="xz --check=crc32 --lzma2=dict=2MiB" ;;
 		*) abort "Unknown ramdisk compression format ($magicbytes)." ;;
 	esac
 	print "Detected ramdisk compression format: $rdformat"
@@ -101,16 +105,16 @@ determine_ramdisk_format() {
 dump_ramdisk() {
 	cd $ramdisk
 	$decompress -d < $split_img/boot.img-ramdisk | cpio -i
-	[ $? != 0 ] && abort "Dumping/unpacking ramdisk failed"
+	[ $? != 0 ] && abort "Unpacking ramdisk failed"
 }
 
 # execute all scripts in patch.d
 patch_ramdisk() {
 	print "Running ramdisk patching scripts..."
 	find "$tmp/patch.d/" -type f | sort | while read -r patchfile; do
-		print "Executing: $(basename $patchfile)"
+		print "Executing: $(basename "$patchfile")"
 		env="$tmp/patch.d-env" sh "$patchfile" || {
-			abort "Script failed: $(basename $patchfile)"
+			abort "Script failed: $(basename "$patchfile")"
 		}
 	done
 }
@@ -119,8 +123,7 @@ patch_ramdisk() {
 build_ramdisk() {
 	print "Building new ramdisk..."
 	cd $ramdisk
-#	find | cpio -o -H newc | decompress > $tmp/ramdisk-new
-	find | cpio -o -H newc | gzip -9c > $tmp/ramdisk-new
+	find | cpio -o -H newc | $compress > $tmp/ramdisk-new
 }
 
 # build the new boot image
@@ -128,71 +131,49 @@ build_boot() {
 	cd $split_img
 	kernel=
 	for image in zImage zImage-dtb Image Image-dtb Image.gz Image.gz-dtb; do
-		[ -s $tmp/$image ] && {
-			kernel="--kernel $tmp/$image"
+		if [ -s $tmp/$image ]; then
+			kernel="$tmp/$image"
 			print "Found replacement kernel $image!"
-		} && break
+			break
+		fi
 	done
-	[ "$kernel" ] || {
-		[ -s *-zImage ] && {
-			kernel="--kernel $(ls $split_img/*-zImage)"
-		} || {
-			abort "Unable to find kernel image!"
-		}
-	}
-	[ -s $tmp/ramdisk-new ] && {
-		rd="--ramdisk $tmp/ramdisk-new"
+	[ "$kernel" ] || kernel="$(ls ./*-zImage)"
+	if [ -s $tmp/ramdisk-new ]; then
+		rd="$tmp/ramdisk-new"
 		print "Found replacement ramdisk image!"
-	} || {
-		[ -s *-ramdisk ] && {
-			rd="--ramdisk $(ls $split_img/*-ramdisk)"
-		} || {
-			abort "Unable to find ramdisk image!"
-		}
-	}
-	[ -s $tmp/dtb.img ] && {
-		dtb="--dt $tmp/dtb.img"
+	else
+		rd="$(ls ./*-ramdisk)"
+	fi
+	if [ -s $tmp/dtb.img ]; then
+		dtb="$tmp/dtb.img"
 		print "Found replacement device tree image!"
-	} || {
-		[ -s *-dt ] && dtb="--dt $(ls $split_img/*-dt)"
-	}
-	[ -s *-second ] && second="--second $(ls $split_img/*-second)"
-	[ -s *-cmdline ] && cmdline="$(cat ./*-cmdline)"
-	[ -s *-board ] && board="$(cat ./*-board)"
-	[ -s *-base ] && {
-		base="--base $(cat ./*-base)"
-	} || {
-		abort "Unable to find boot base address!"
-	}
-	[ -s *-pagesize ] && {
-		pagesize="--pagesize $(cat ./*-pagesize)"
-	} || {
-		abort "Unable to find boot pagesize!"
-	}
-	[ -s *-kernel_offset ] && {
-		kernel_offset="--kernel_offset $(cat ./*-kernel_offset)"
-	} || {
-		abort "Unable to find kernel offset address!"
-	}
-	[ -s *-ramdisk_offset ] && {
-		ramdisk_offset="--ramdisk_offset $(cat ./*-ramdisk_offset)"
-	} || {
-		abort "Unable to find ramdisk offset address!"
-	}
-	[ -s *-second_offset ] && second_offset="--second_offset $(cat ./*-second_offset)"
-	[ -s *-tags_offset ] && tags_offset="--tags_offset $(cat ./*-tags_offset)"
-	$bin/mkbootimg $kernel $rd $second --cmdline "$cmdline" --board "$board" \
-		$base $pagesize $kernel_offset $ramdisk_offset $second_offset $tags_offset $dtb \
-		-o $tmp/boot-new.img
-	[ $? != 0 -o ! -s $tmp/boot-new.img ] && {
-		abort "Repacking boot image failed!"
-	}
+	else
+		dtb="$(ls ./*-dt)"
+	fi
+	$bin/mkbootimg \
+		--kernel "$kernel" \
+		--ramdisk "$rd" \
+		--dt "$dtb" \
+		--second "$(ls ./*-second)" \
+		--cmdline "$(cat ./*-cmdline)" \
+		--board "$(cat ./*-board)" \
+		--base "$(cat ./*-base)" \
+		--pagesize "$(cat ./*-pagesize)" \
+		--kernel_offset "$(cat ./*-kernel_offset)" \
+		--ramdisk_offset "$(cat ./*-ramdisk_offset)" \
+		--second_offset "$(cat ./*-second_offset)" \
+		--tags_offset "$(cat ./*-tags_offset)" \
+		-o $tmp/boot-new.img || {
+			abort "Repacking boot image failed"
+		}
 }
 
 # write the new boot image to boot block
 write_boot() {
 	print "Writing new boot image to memory..."
-	dd if="$tmp/boot-new.img" of="$boot_block"
+	flash_image "$boot_block" "$tmp/boot-new.img" || {
+		abort "Failed to write boot image! You may need to restore your boot partition"
+	}
 }
 
 ## end install methods
