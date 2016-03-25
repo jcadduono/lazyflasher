@@ -46,7 +46,7 @@ setperm() {
 print "#######################################"
 print "#    dm-crypt and force encryption    #"
 print "#        disabler by jcadduono        #"
-print "#             version 1.0             #"
+print "#             version 1.1             #"
 print "#######################################"
 
 command -v getprop || {
