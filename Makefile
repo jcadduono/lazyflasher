@@ -5,7 +5,13 @@ EXCLUDE := Makefile *.git*
 all: $(ZIP)
 
 $(ZIP):
-	zip -r9 "$@" . -x $(EXCLUDE)
+	@echo "Creating ZIP: $(ZIP)"
+	@zip -r9 "$@" . -x $(EXCLUDE)
+	@echo "Generating SHA1..."
+	@sha1sum "$@" > "$@.sha1"
+	@cat "$@.sha1"
+	@echo "Done."
 
 clean:
-	rm "$(ZIP)"
+	@rm -f "$(ZIP)" "$(ZIP).sha1"
+	@echo "Done."
