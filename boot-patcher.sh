@@ -31,7 +31,7 @@ abort() {
 # find the location of the boot block
 find_boot() {
 	verify_block() {
-		boot_block=$(readlink -f $boot_block)
+		boot_block=$(readlink -f "$boot_block")
 		# if the boot block is a file, we must use dd
 		if [ -f "$boot_block" ]; then
 			use_dd=true
@@ -50,7 +50,7 @@ find_boot() {
 		print "Found boot partition at: $boot_block"
 	}
 	# if we already have boot block set then verify and use it
-	verify_block && return
+	[ "$boot_block" ] && verify_block && return
 	# otherwise, time to go hunting!
 	[ -f /etc/recovery.fstab ] && {
 		# recovery fstab v1
