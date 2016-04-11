@@ -1,6 +1,6 @@
 #!/bin/sh
 
-tmp=/tmp/no-verity-opt-encrypt
+tmp=/tmp/boot-editor
 
 console=$(cat /tmp/console)
 [ "$console" ] || console=/proc/$$/fd/1
@@ -9,7 +9,11 @@ cd "$tmp"
 . config.sh
 
 print() {
-	echo "ui_print -- $1" > $console
+	[ "$1" ] && {
+		echo "ui_print $1" > $console
+	} || {
+		echo "ui_print  " > $console
+	}
 	echo
 }
 

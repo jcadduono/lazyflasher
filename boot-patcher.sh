@@ -1,7 +1,7 @@
 #!/sbin/sh
 # LazyFlasher boot image patcher script by jcadduono
 
-tmp=/tmp/no-verity-opt-encrypt
+tmp=/tmp/boot-editor
 
 console=$(cat /tmp/console)
 [ "$console" ] || console=/proc/$$/fd/1
@@ -14,7 +14,11 @@ rm -rf $ramdisk $split_img
 mkdir $ramdisk $split_img
 
 print() {
-	echo "ui_print - $1" > $console
+	[ "$1" ] && {
+		echo "ui_print - $1" > $console
+	} || {
+		echo "ui_print  " > $console
+	}
 	echo
 }
 
@@ -128,12 +132,11 @@ dump_ramdisk() {
 # execute all scripts in patch.d
 patch_ramdisk() {
 	print "Running ramdisk patching scripts..."
-	find "$tmp/patch.d/" -type f | sort | while read -r patchfile; do
+	find "$tmp/patch.d/" -type f | sort > "$tmp/patchfiles"
+	while read -r patchfile; do
 		print "Executing: $(basename "$patchfile")"
-		env="$tmp/patch.d-env" sh "$patchfile" || {
-			abort "Script failed: $(basename "$patchfile")"
-		}
-	done
+		env="$tmp/patch.d-env" sh "$patchfile" || exit 1
+	done < "$tmp/patchfiles"
 }
 
 # build the new ramdisk

@@ -1,7 +1,7 @@
 #!/sbin/sh
 # LazyFlasher installer backend
 
-tmp=/tmp/no-verity-opt-encrypt
+tmp=/tmp/boot-editor
 
 [ "$3" ] && {
 	zip=$3
@@ -14,7 +14,11 @@ tmp=/tmp/no-verity-opt-encrypt
 }
 
 print() {
-	echo "ui_print $1" > $console
+	[ "$1" ] && {
+		echo "ui_print $1" > $console
+	} || {
+		echo "ui_print  " > $console
+	}
 	echo
 }
 
@@ -44,27 +48,9 @@ setperm() {
 }
 
 print "#######################################"
-print "#    dm-crypt and force encryption    #"
-print "#        disabler by jcadduono        #"
-print "#             version 1.4             #"
+print "#      boot image editor via ADB      #"
+print "#      by jcadduono, version 1.0      #"
 print "#######################################"
-
-command -v getprop || {
-	print "Warning: getprop not found! Skipping device check!"
-	unset device_names
-}
-
-[ "$device_names" ] && {
-	print "Checking device compatibility..."
-	match=0
-	ro_product_device="$(getprop ro.product.device)"
-	ro_product_model="$(getprop ro.product.model)"
-	ro_build_product="$(getprop ro.build.product)"
-	for i in $device_names; do
-		[ "$ro_product_device" = "$i" -o "$ro_product_model" = "$i" -o "$ro_build_product" = "$i" ] && match=1
-	done
-	[ $match != 1 ] && abort "Unsupported device"
-}
 
 # Unpack the installer
 [ "$zip" ] && {

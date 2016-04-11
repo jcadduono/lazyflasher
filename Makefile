@@ -1,4 +1,4 @@
-ZIP := no-verity-opt-encrypt.zip
+ZIP := boot-editor.zip
 
 EXCLUDE := Makefile *.git*
 
