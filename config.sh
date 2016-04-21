@@ -2,9 +2,9 @@
 
 ## start config variables
 
-tmp=/tmp/boot-editor
+tmp=/tmp/recovery-editor
 # leave boot_block empty for automatic (searches recovery.fstab and other locations)
-boot_block=
+recovery_block=
 bin=$tmp/tools
 ramdisk=$tmp/ramdisk
 ramdisk_patch=$ramdisk-patch

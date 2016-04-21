@@ -1,7 +1,7 @@
 #!/sbin/sh
 # LazyFlasher installer backend
 
-tmp=/tmp/boot-editor
+tmp=/tmp/recovery-editor
 
 [ "$3" ] && {
 	zip=$3
@@ -28,7 +28,7 @@ abort() {
 		print "Aborting..."
 	}
 	cleanup
-	print "Failed to patch boot image!"
+	print "Failed to patch recovery image!"
 	exit 1
 }
 
@@ -48,7 +48,7 @@ setperm() {
 }
 
 print "#######################################"
-print "#      boot image editor via ADB      #"
+print "#    recovery image editor via ADB    #"
 print "#      by jcadduono, version 1.0      #"
 print "#######################################"
 
@@ -63,8 +63,8 @@ cd "$tmp"
 
 setperm 0755 0755 "$bin"
 
-print "Running boot image patcher..."
-sh boot-patcher.sh || abort
+print "Running recovery image patcher..."
+sh recovery-patcher.sh || abort
 
 print "Boot image patching complete"
 

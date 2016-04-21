@@ -6,11 +6,11 @@ touch "$tmp/save"
 touch "$tmp/abort"
 
 print
-print "You can now modify your boot image contents via ADB."
+print "You can now modify your recovery image contents via ADB."
 print "Your ramdisk contents are located at:"
 print "$ramdisk"
 print
-print "To finish your work and flash the modified boot image, simply execute:"
+print "To finish your work and flash the modified recovery image, simply execute:"
 print "echo 1 > $tmp/save"
 print
 print "If you would like to abort your modifications, you can instead execute:"

@@ -1,7 +1,7 @@
 #!/sbin/sh
-# LazyFlasher boot image patcher script by jcadduono
+# LazyFlasher recovery image patcher script by jcadduono
 
-tmp=/tmp/boot-editor
+tmp=/tmp/recovery-editor
 
 console=$(cat /tmp/console)
 [ "$console" ] || console=/proc/$$/fd/1
@@ -32,14 +32,14 @@ abort() {
 
 ## start install methods
 
-# find the location of the boot block
-find_boot() {
+# find the location of the recovery block
+find_recovery() {
 	verify_block() {
 		boot_block=$(readlink -f "$boot_block")
-		# if the boot block is a file, we must use dd
+		# if the recovery block is a file, we must use dd
 		if [ -f "$boot_block" ]; then
 			use_dd=true
-		# if the boot block is a block device, we use flash_image when possible
+		# if the recovery block is a block device, we use flash_image when possible
 		elif [ -b "$boot_block" ]; then
 			case "$boot_block" in
 				/dev/block/bml*|/dev/block/mtd*|/dev/block/mmc*)
@@ -51,64 +51,64 @@ find_boot() {
 		else
 			return 1
 		fi
-		print "Found boot partition at: $boot_block"
+		print "Found recovery partition at: $boot_block"
 	}
-	# if we already have boot block set then verify and use it
+	# if we already have recovery block set then verify and use it
 	[ "$boot_block" ] && verify_block && return
 	# otherwise, time to go hunting!
 	[ -f /etc/recovery.fstab ] && {
 		# recovery fstab v1
-		boot_block=$(awk '$1 == "/boot" {print $3}' /etc/recovery.fstab)
+		boot_block=$(awk '$1 == "/recovery" {print $3}' /etc/recovery.fstab)
 		[ "$boot_block" ] && verify_block && return
 		# recovery fstab v2
-		boot_block=$(awk '$2 == "/boot" {print $1}' /etc/recovery.fstab)
+		boot_block=$(awk '$2 == "/recovery" {print $1}' /etc/recovery.fstab)
 		[ "$boot_block" ] && verify_block && return
 		return 1
 	} && return
 	[ -f /fstab.qcom ] && {
 		# qcom fstab
-		boot_block=$(awk '$2 == "/boot" {print $1}' /fstab.qcom)
+		boot_block=$(awk '$2 == "/recovery" {print $1}' /fstab.qcom)
 		[ "$boot_block" ] && verify_block && return
 		return 1
 	} && return
 	[ -f /proc/emmc ] && {
 		# emmc layout
-		boot_block=$(awk '$4 == "\"boot\"" {print $1}' /proc/emmc)
+		boot_block=$(awk '$4 == "\"recovery\"" {print $1}' /proc/emmc)
 		[ "$boot_block" ] && boot_block=/dev/block/$(echo "$boot_block" | cut -f1 -d:) && verify_block && return
 		return 1
 	} && return
 	[ -f /proc/mtd ] && {
 		# mtd layout
-		boot_block=$(awk '$4 == "\"boot\"" {print $1}' /proc/mtd)
+		boot_block=$(awk '$4 == "\"recovery\"" {print $1}' /proc/mtd)
 		[ "$boot_block" ] && boot_block=/dev/block/$(echo "$boot_block" | cut -f1 -d:) && verify_block && return
 		return 1
 	} && return
 	[ -f /proc/dumchar_info ] && {
 		# mtk layout
-		boot_block=$(awk '$1 == "/boot" {print $5}' /proc/dumchar_info)
+		boot_block=$(awk '$1 == "/recovery" {print $5}' /proc/dumchar_info)
 		[ "$boot_block" ] && verify_block && return
 		return 1
 	} && return
-	abort "Unable to find boot block location"
+	abort "Unable to find recovery block location"
 }
 
-# dump boot and unpack the android boot image
-dump_boot() {
-	print "Dumping & unpacking original boot image..."
+# dump recovery and unpack the android recovery image
+dump_recovery() {
+	print "Dumping & unpacking original recovery image..."
 	if $use_dd; then
-		dd if="$boot_block" of="$tmp/boot.img"
+		dd if="$boot_block" of="$tmp/recovery.img"
 	else
-		dump_image "$boot_block" "$tmp/boot.img"
+		dump_image "$boot_block" "$tmp/recovery.img"
 	fi
-	[ $? = 0 ] || abort "Unable to read boot partition"
-	$bin/unpackbootimg -i "$tmp/boot.img" -o "$split_img" || {
-		abort "Unpacking boot image failed"
+	[ $? = 0 ] || abort "Unable to read recovery partition"
+	$bin/unpackbootimg -i "$tmp/recovery.img" -o "$split_img" || {
+		abort "Unpacking recovery image failed"
 	}
 }
 
 # determine the format the ramdisk was compressed in
 determine_ramdisk_format() {
-	magicbytes=$(hexdump -vn2 -e '2/1 "%x"' $split_img/boot.img-ramdisk)
+	magicbytes=$(hexdump -vn2 -e '2/1 "%x"' $split_img/recovery.img-ramdisk)
 	case "$magicbytes" in
 		425a) rdformat=bzip2; decompress=bzip2 ; compress="gzip -9c" ;; #compress="bzip2 -9c" ;;
 		1f8b|1f9e) rdformat=gzip; decompress=gzip ; compress="gzip -9c" ;;
@@ -125,7 +125,7 @@ determine_ramdisk_format() {
 # extract the old ramdisk contents
 dump_ramdisk() {
 	cd $ramdisk
-	$decompress -d < $split_img/boot.img-ramdisk | cpio -i
+	$decompress -d < $split_img/recovery.img-ramdisk | cpio -i
 	[ $? != 0 ] && abort "Unpacking ramdisk failed"
 }
 
@@ -146,8 +146,8 @@ build_ramdisk() {
 	find | cpio -o -H newc | $compress > $tmp/ramdisk-new
 }
 
-# build the new boot image
-build_boot() {
+# build the new recovery image
+build_recovery() {
 	cd $split_img
 	kernel=
 	for image in zImage zImage-dtb Image Image-dtb Image.gz Image.gz-dtb; do
@@ -183,29 +183,29 @@ build_boot() {
 		--ramdisk_offset "$(cat ./*-ramdisk_offset)" \
 		--second_offset "$(cat ./*-second_offset)" \
 		--tags_offset "$(cat ./*-tags_offset)" \
-		-o $tmp/boot-new.img || {
-			abort "Repacking boot image failed"
+		-o $tmp/recovery-new.img || {
+			abort "Repacking recovery image failed"
 		}
 }
 
-# write the new boot image to boot block
-write_boot() {
-	print "Writing new boot image to memory..."
+# write the new recovery image to recovery block
+write_recovery() {
+	print "Writing new recovery image to memory..."
 	if $use_dd; then
-		dd if="$tmp/boot-new.img" of="$boot_block"
+		dd if="$tmp/recovery-new.img" of="$boot_block"
 	else
-		flash_image "$boot_block" "$tmp/boot-new.img"
+		flash_image "$boot_block" "$tmp/recovery-new.img"
 	fi
-	[ $? = 0 ] || abort "Failed to write boot image! You may need to restore your boot partition"
+	[ $? = 0 ] || abort "Failed to write recovery image! You may need to restore your recovery partition"
 }
 
 ## end install methods
 
-## start boot image patching
+## start recovery image patching
 
-find_boot
+find_recovery
 
-dump_boot
+dump_recovery
 
 determine_ramdisk_format
 
@@ -215,8 +215,8 @@ patch_ramdisk
 
 build_ramdisk
 
-build_boot
+build_recovery
 
-write_boot
+write_recovery
 
-## end boot image patching
+## end recovery image patching

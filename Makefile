@@ -1,4 +1,4 @@
-ZIP := boot-editor.zip
+ZIP := recovery-editor.zip
 
 EXCLUDE := Makefile *.git*
 
