@@ -1,4 +1,4 @@
-ZIP := boot-editor.zip
+ZIP := kernel-flasher.zip
 
 EXCLUDE := Makefile *.git*
 

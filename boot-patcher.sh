@@ -1,7 +1,7 @@
 #!/sbin/sh
 # LazyFlasher boot image patcher script by jcadduono
 
-tmp=/tmp/boot-editor
+tmp=/tmp/kernel-flasher
 
 console=$(cat /tmp/console)
 [ "$console" ] || console=/proc/$$/fd/1
@@ -9,9 +9,9 @@ console=$(cat /tmp/console)
 cd "$tmp"
 . config.sh
 
-chmod -R 755 $bin
-rm -rf $ramdisk $split_img
-mkdir $ramdisk $split_img
+chmod -R 755 "$bin"
+rm -rf "$ramdisk" "$split_img"
+mkdir "$ramdisk" "$split_img"
 
 print() {
 	[ "$1" ] && {
@@ -112,7 +112,7 @@ determine_ramdisk_format() {
 	case "$magicbytes" in
 		425a) rdformat=bzip2; decompress=bzip2 ; compress="gzip -9c" ;; #compress="bzip2 -9c" ;;
 		1f8b|1f9e) rdformat=gzip; decompress=gzip ; compress="gzip -9c" ;;
-		0221) rdformat=lz4; decompress=$bin/lz4 ; compress="$bin/lz4 -9" ;;
+		0221) rdformat=lz4; decompress=$bin/lz4 ; compress="gzip -9c" ;; #compress="$bin/lz4 -9" ;;
 		5d00) rdformat=lzma; decompress=lzma ; compress="gzip -9c" ;; #compress="lzma -c" ;;
 		894c) rdformat=lzo; decompress=lzop ; compress="gzip -9c" ;; #compress="lzop -9c" ;;
 		fd37) rdformat=xz; decompress=xz ; compress="gzip -9c" ;; #compress="xz --check=crc32 --lzma2=dict=2MiB" ;;
