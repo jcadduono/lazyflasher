@@ -1,7 +1,7 @@
 #!/sbin/sh
 # LazyFlasher boot image patcher script by jcadduono
 
-tmp=/tmp/kernel-flasher
+tmp=/tmp/adb-boot-insecure
 
 console=$(cat /tmp/console)
 [ "$console" ] || console=/proc/$$/fd/1

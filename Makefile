@@ -1,4 +1,4 @@
-ZIP := kernel-flasher.zip
+ZIP := adb-boot-insecure.zip
 
 EXCLUDE := Makefile *.git*
 

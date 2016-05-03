@@ -1,7 +1,7 @@
 #!/sbin/sh
 # Kernel Flasher installer backend
 
-tmp=/tmp/kernel-flasher
+tmp=/tmp/adb-boot-insecure
 
 [ "$3" ] && {
 	zip=$3
@@ -48,9 +48,8 @@ setperm() {
 }
 
 print "#######################################"
-print "#           kernel flasher            #"
+print "#      adb boot insecure patcher      #"
 print "#      by jcadduono, version 1.0      #"
-print "#   add your own intro message here!  #"
 print "#######################################"
 
 # Unpack the installer

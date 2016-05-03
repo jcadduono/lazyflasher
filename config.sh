@@ -2,7 +2,7 @@
 
 ## start config variables
 
-tmp=/tmp/kernel-flasher
+tmp=/tmp/adb-boot-insecure
 
 # leave device_names empty to allow flashing on any device
 device_names=
