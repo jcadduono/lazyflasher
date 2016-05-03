@@ -2,17 +2,15 @@
 
 ## start config variables
 
-tmp=/tmp/adb-boot-insecure
-
-# leave device_names empty to allow flashing on any device
-device_names=
-# leave boot_block empty for automatic (searches recovery.fstab and other locations)
-boot_block=
+tmp=/tmp/phh-superuser
 
 bin=$tmp/tools
 ramdisk=$tmp/ramdisk
 ramdisk_patch=$ramdisk-patch
 split_img=$tmp/split-img
+
+selinuxmode=power
+suloc=/system/xbin/su
 
 ## end config variables
 

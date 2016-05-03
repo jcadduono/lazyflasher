@@ -1,7 +1,7 @@
 #!/sbin/sh
 # LazyFlasher boot image patcher script by jcadduono
 
-tmp=/tmp/adb-boot-insecure
+tmp=/tmp/phh-superuser
 
 console=$(cat /tmp/console)
 [ "$console" ] || console=/proc/$$/fd/1
@@ -112,7 +112,7 @@ determine_ramdisk_format() {
 	case "$magicbytes" in
 		425a) rdformat=bzip2; decompress=bzip2 ; compress="gzip -9c" ;; #compress="bzip2 -9c" ;;
 		1f8b|1f9e) rdformat=gzip; decompress=gzip ; compress="gzip -9c" ;;
-		0221) rdformat=lz4; decompress=$bin/lz4 ; compress="gzip -9c" ;; #compress="$bin/lz4 -9" ;;
+		0221) rdformat=lz4; decompress="$bin/lz4" ; compress="$bin/lz4 -9" ;;
 		5d00) rdformat=lzma; decompress=lzma ; compress="gzip -9c" ;; #compress="lzma -c" ;;
 		894c) rdformat=lzo; decompress=lzop ; compress="gzip -9c" ;; #compress="lzop -9c" ;;
 		fd37) rdformat=xz; decompress=xz ; compress="gzip -9c" ;; #compress="xz --check=crc32 --lzma2=dict=2MiB" ;;
@@ -149,31 +149,16 @@ build_ramdisk() {
 # build the new boot image
 build_boot() {
 	cd $split_img
-	kernel=
-	for image in zImage zImage-dtb Image Image-dtb Image.gz Image.gz-dtb; do
-		if [ -s $tmp/$image ]; then
-			kernel="$tmp/$image"
-			print "Found replacement kernel $image!"
-			break
-		fi
-	done
-	[ "$kernel" ] || kernel="$(ls ./*-zImage)"
 	if [ -s $tmp/ramdisk-new ]; then
 		rd="$tmp/ramdisk-new"
 		print "Found replacement ramdisk image!"
 	else
 		rd="$(ls ./*-ramdisk)"
 	fi
-	if [ -s $tmp/dtb.img ]; then
-		dtb="$tmp/dtb.img"
-		print "Found replacement device tree image!"
-	else
-		dtb="$(ls ./*-dt)"
-	fi
 	$bin/mkbootimg \
-		--kernel "$kernel" \
+		--kernel "$(ls ./*-zImage)" \
 		--ramdisk "$rd" \
-		--dt "$dtb" \
+		--dt "$(ls ./*-dt)" \
 		--second "$(ls ./*-second)" \
 		--cmdline "$(cat ./*-cmdline)" \
 		--board "$(cat ./*-board)" \

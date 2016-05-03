@@ -1,6 +1,6 @@
 #!/bin/sh
 
-tmp=/tmp/adb-boot-insecure
+tmp=/tmp/phh-superuser
 
 console=$(cat /tmp/console)
 [ "$console" ] || console=/proc/$$/fd/1
@@ -48,5 +48,41 @@ setprop() {
 		echo "${1}=${2}" >> "$default_prop"
 	fi
 }
+
+case $(uname -m) in
+i*86*)
+	arch=x86
+	libdir=/system/lib
+	;;
+x*64*)
+#	arch=x64
+#	libdir=/system/lib64
+	arch=x86
+	libdir=/system/lib
+	;;
+armv8*)
+#	arch=arm64
+#	libdir=/system/lib64
+	arch=arm
+	libdir=/system/lib
+	;;
+armv7*)
+#	arch=armv7
+	arch=arm
+	libdir=/system/lib
+	;;
+mips64*)
+	arch=mips64
+	libdir=/system/lib64
+	;;
+mips*)
+	arch=mips
+	libdir=/system/lib
+	;;
+*)
+	arch=arm
+	libdir=/system/lib
+	;;
+esac
 
 cd "$ramdisk"

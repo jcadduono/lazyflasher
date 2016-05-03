@@ -1,0 +1,509 @@
+#!/sbin/sh
+
+. "$env"
+
+################# SCRIPT SETUP ##################
+
+[ -f "su-$arch" ] || abort "Unsupported architecture: $arch!"
+[ -f sepolicy ] || abort "Missing sepolicy!"
+[ "$selinuxmode" ] || selinuxmode=power
+[ "$suloc" ] || suloc=/system/xbin/su
+
+seinject() {
+	"$bin/sepolicy-inject" "$@" -P sepolicy
+}
+
+seinject2() {
+	"$bin/sepolicy-inject-v2" "$@" -P sepolicy
+}
+
+if ! seinject -e -c filesystem && seinject2 -e -c filesystem; then
+	# Android N
+	alias seinject=seinject2
+	ANDROID=24
+elif seinject -e -s gatekeeper_service; then
+	# Android M
+	ANDROID=23
+elif seinject -e -c service_manager; then
+	# Android L MR1
+	ANDROID=21
+else
+	abort "Unknown Android API level!"
+fi
+
+print
+print "Found architecture: $arch"
+print "Found Android API level: $ANDROID"
+print
+print "Superuser policy mode: $selinuxmode"
+print
+
+############### START BOOTIMG.SH ################
+
+# allow <list of scontext> <list of tcontext> <class> <list of perm>
+allow() {
+	[ ! "$1" -o ! "$2" -o ! "$3" -o ! "$4" ] && false
+	for s in $1; do
+		for t in $2; do
+			seinject -s "$s" -t "$t" -c "$3" -p "$(echo "$4" | tr ' ' ',')"
+		done
+	done
+}
+
+noaudit() {
+	for s in $1; do
+		for t in $2; do
+			for p in $4; do
+				seinject -s "$s" -t "$t" -c "$3" -p "$p"
+			done
+		done
+	done
+}
+
+# Extracted from global_macros
+r_file_perms="getattr open read ioctl lock"
+x_file_perms="getattr execute execute_no_trans"
+rx_file_perms="$r_file_perms $x_file_perms"
+w_file_perms="open append write"
+rw_file_perms="$r_file_perms $w_file_perms"
+rwx_file_perms="$rx_file_perms $w_dir_perms"
+rw_socket_perms="ioctl read getattr write setattr lock append bind connect getopt setopt shutdown"
+create_socket_perms="create $rw_socket_perms"
+rw_stream_socket_perms="$rw_socket_perms listen accept"
+create_stream_socket_perms="create $rw_stream_socket_perms"
+r_dir_perms="open getattr read search ioctl"
+w_dir_perms="open search write add_name remove_name"
+ra_dir_perms="$r_dir_perms add name write"
+rw_dir_perms="$r_dir_perms $w_dir_perms"
+create_dir_perms="create reparent rename rmdir setattr $rw_dir_perms"
+
+allowFSR() {
+	allow "$1" "$2" dir "$r_dir_perms"
+	allow "$1" "$2" file "$r_file_perms"
+	allow "$1" "$2" lnk_file "read getattr"
+}
+
+allowFSRW() {
+	allow "$1" "$2" dir "$rw_dir_perms create"
+	allow "$1" "$2" file "$rw_file_perms create setattr unlink rename"
+	allow "$1" "$2" lnk_file "read getattr"
+}
+
+allowFSRWX() {
+	allowFSRW "$1" "$2"
+	allow "$1" "$2" file "$x_file_perms"
+}
+
+####### START SU-COMMUNICATIONS.SH #######
+
+# allowSuClient <scontext>
+allowSuClient() {
+	# All domain-s already have read access to rootfs
+	allow "$1" rootfs file "execute_no_trans execute" # TODO: Why do I need execute?!? (on MTK 5.1, kernel 3.10)
+	[ "$ANDROID" -ge 24 ] && allowFSR "$1" rootfs
+	allow "$1" su_daemon unix_stream_socket "connectto getopt"
+
+	allow "$1" su_device dir "search read"
+	allow "$1" su_device sock_file "read write"
+	allow su_daemon "$1" "fd" "use"
+
+	allow su_daemon "$1" fifo_file "read write getattr ioctl"
+
+	# Read /proc/callerpid/cmdline in from_init, drop?
+	# Requiring sys_ptrace sucks
+	allow su_daemon "$1" "dir" "search"
+	allow su_daemon "$1" "file" "read open"
+	allow su_daemon "$1" "lnk_file" "read"
+	allow su_daemon su_daemon "capability" "sys_ptrace"
+
+	# TODO: Split in for su/su_sensitive/su_cts
+	allow su "$1" "fd" "use"
+	allow su "$1" "fifo_file" "read write"
+}
+
+suDaemonTo() {
+	allow su_daemon "$1" "process" "transition"
+	noaudit su_daemon "$1" "process" "siginh rlimitinh noatsecure"
+}
+
+suDaemonRights() {
+	allow su_daemon rootfs file "entrypoint"
+
+	allow su_daemon su_daemon "dir" "search read"
+	allow su_daemon su_daemon "file" "read write open"
+	allow su_daemon su_daemon "lnk_file" "read"
+	allow su_daemon su_daemon "unix_dgram_socket" "create connect write"
+	allow su_daemon su_daemon "unix_stream_socket" "$create_stream_socket_perms"
+
+	allow su_daemon devpts chr_file "read write open getattr"
+
+	allow su_daemon untrusted_app_devpts chr_file "read write open getattr"
+
+	allow su_daemon su_daemon "capability" "setuid setgid"
+
+	# Access to /data/data/me.phh.superuser/xxx
+	allow su_daemon app_data_file "dir" "getattr search write add_name"
+	allow su_daemon app_data_file "file" "getattr read open lock"
+
+	# FIXME: This shouldn't exist
+	# dac_override can be fixed by having pts_slave's fd forwarded over socket
+	# Instead of forwarding the name
+	allow su_daemon su_daemon "capability" "dac_override"
+
+	allow su_daemon su_daemon "process" "fork sigchld"
+
+	# toolbox needed for log
+	allow su_daemon toolbox_exec "file" "execute read open execute_no_trans" || true
+
+	# Create /dev/me.phh.superuser. Could be done by init
+	allow su_daemon device "dir" "write add_name"
+	allow su_daemon su_device "dir" "create setattr remove_name add_name"
+	allow su_daemon su_device "sock_file" "create unlink"
+
+	# Allow su daemon to start su apk
+	allow su_daemon zygote_exec "file" "execute read open execute_no_trans"
+
+	# Send request to APK
+	allow su_daemon su_device dir "search write add_name"
+
+	# Allow su_daemon to switch to su or su_sensitive
+	allow su_daemon su_daemon "process" "setexec"
+
+	# Allow su_daemon to execute a shell (every commands are supposed to go through a shell)
+	allow su_daemon shell_exec file "execute read open"
+
+	allow su_daemon su_daemon "capability" "chown"
+
+	suDaemonTo su
+}
+
+################ START RIGHTS.SH ################
+
+# In this file lies the real permissions of a process running in su
+
+r_file_perms="getattr open read ioctl lock"
+x_file_perms="getattr execute execute_no_trans"
+rx_file_perms="$r_file_perms $x_file_perms"
+w_file_perms="open append write"
+
+# Here lies everything we know DON'T want
+# Add them as noaudits
+knownForbidden() {
+	noaudit "$1" dalvikcache_data_file dir "write add_name remove_name"
+	noaudit "$1" dalvikcache_data_file file "write append create unlink"
+}
+
+# Enable the app to write to logs
+allowLog() {
+	allow "$1" logdw_socket sock_file "write"
+	allow "$1" logd unix_dgram_socket "sendto"
+	allow logd "$1" dir "search"
+	allow logd "$1" file "read open getattr"
+	allow "$1" "$1" dir "search read"
+	allow "$1" "$1" "unix_dgram_socket" "create connect write"
+	allow "$1" "$1" "lnk_file" "read"
+	allow "$1" "$1" file "read"
+	allow "$1" toolbox_exec file "read" || true
+	allow "$1" devpts chr_file "read write open"
+}
+
+# Rights to be added for services/apps to talk (back) to su
+suBackL0() {
+	allow system_server "$1" binder "call transfer"
+
+	# ES Explorer opens a socket
+	allow untrusted_app su unix_stream_socket "$rw_socket_perms connectto"
+
+	# Any domain is allowed to send su "sigchld"
+	# TODO: Have sepolicy-inject handle that
+	# allow "=domain" su process "sigchld"
+	allow "surfaceflinger" "su" "process" "sigchld"
+}
+
+suBackL6() {
+	# Used by CF.lumen (restarts surfaceflinger, and communicates with it)
+	# TODO: Add a rule to enforce surfaceflinger doesn't have dac_override
+	allowFSRWX surfaceflinger "app_data_file"
+	seinject -a mlstrustedsubject -s surfaceflinger
+}
+
+suBind() {
+	# Allow to override /system/xbin/su
+	allow su_daemon su_exec "file" "mounton read"
+
+	# We will create files in /dev/su/, they will be marked as su_device
+	allowFSRWX su_daemon su_device
+	allow su_daemon su_device "file" "relabelfrom"
+	allow su_daemon system_file "file" "relabelto"
+}
+
+# This is the vital minimum for su to open a uid 0 shell
+suRights() {
+	# Communications with su_daemon
+	allow "$1" "su_daemon" fd "use"
+	allow "$1" "su_daemon" process "sigchld"
+	allow "$1" "su_daemon" "unix_stream_socket" "read write"
+
+	# Admit su_daemon is meant to be god.
+	allow su_daemon su_daemon "capability" "sys_admin"
+
+	allow servicemanager "$1" "dir" "search read"
+	allow servicemanager "$1" "file" "open read"
+	allow servicemanager "$1" "process" "getattr"
+	allow servicemanager "$1" "binder" "transfer"
+	allow system_server su binder "call"
+
+	allow "$1" "shell_exec zygote_exec dalvikcache_data_file rootfs system_file" file "$rx_file_perms entrypoint"
+	allow "$1" "dalvikcache_data_file rootfs system_file" lnk_file "read getattr"
+	allow "$1" "dalvikcache_data_file rootfs system_file" dir "$r_dir_perms"
+	# toolbox_exec is Android 6.0, was "system_file" before
+	[ "$ANDROID" -ge 23 ] && allow "$1" "toolbox_exec" file "$rx_file_perms entrypoint"
+	allow "$1" "devpts" chr_file "getattr ioctl"
+	allow "$1" "system_server servicemanager" "binder" "call transfer"
+	[ "$ANDROID" -ge 23 ] && allow "$1" activity_service service_manager "find"
+	allow "$1" untrusted_app_devpts chr_file "read write open getattr ioctl"
+
+	# Give full access to itself
+	allow "$1" "$1" "file" "$rwx_file_perms"
+	allow "$1" "$1" "unix_stream_socket" "$create_stream_socket_perms"
+	allow "$1" "$1" "process" "sigchld setpgid setsched fork signal execmem getsched"
+	allow "$1" "$1" "fifo_file" "$rw_file_perms"
+}
+
+suReadLogs() {
+	# dmesg
+	allow "$1" kernel system "syslog_read syslog_mod"
+	allow "$1" "$1" capability2 "syslog"
+
+	# logcat
+	allow "$1" logdr_socket sock_file "write"
+	allow "$1" logd unix_stream_socket "connectto $rw_socket_perms"
+	if [ "$ANDROID" -ge 22 ]; then
+		allow "$1" logcat_exec file "getattr execute"
+	fi
+}
+
+suToApps() {
+	allow "$1" untrusted_app fifo_file "ioctl getattr"
+	allow "$1" app_data_file dir "search getattr"
+	allow "$1" app_data_file file "getattr execute read open execute_no_trans"
+}
+
+# Refer/comment to super-bootimg's issue #4
+suFirewall() {
+	suToApps "$1"
+
+	allow "$1" "$1" unix_stream_socket "$create_stream_socket_perms"
+	allow "$1" "$1" rawip_socket "$create_socket_perms"
+	allow "$1" "$1" udp_socket "$create_socket_perms"
+	allow "$1" "$1" tcp_socket "$create_socket_perms"
+	allow "$1" "$1" capability "net_raw net_admin"
+	allow "$1" "$1" netlink_route_socket "nlmsg_write"
+}
+
+suMiscL0() {
+	# In for untrusted_app in AOSP b/23476772
+	allow "$1" servicemanager service_manager list
+	allow "$1" "$1" capability "sys_nice"
+}
+
+suServicesL1() {
+	if [ "$ANDROID" -ge 23 ]; then
+		allow "$1" =service_manager_type-gatekeeper_service service_manager find
+	else
+		allow "$1" =service_manager_type service_manager find
+	fi
+}
+
+suMiscL1() {
+	# Access to /data/local/tmp/
+	allowFSRWX "$1" shell_data_file
+
+	# Access to /sdcard & friends
+
+	# Those are AndroidM specific
+	[ "$ANDROID" -ge 23 ] && allowFSR "$1" "storage_file mnt_user_file"
+
+	# fuse context is >= 5.0
+	allowFSR "$1" "fuse"
+
+	# strace self
+	allow "$1" "$1" process "ptrace"
+}
+
+suNetworkL0() {
+	seinject -a netdomain -s su
+	seinject -a bluetoothdomain -s su
+}
+
+suNetworkL1() {
+	allow "$1" "$1" netlink_route_socket "create setopt bind getattr write nlmsg_read read"
+	allowFSR su net_data_file
+	true
+}
+
+suMiscL8() {
+	# Allow to mount --bind to a file in /system/
+	allow "$1" system_file file "mounton"
+	allow "$1" "$1" capability "sys_admin"
+}
+
+suMiscL9() {
+	# Remounting /system RW
+	allow "$1" labeledfs filesystem "remount unmount"
+	# Remounting / RW
+	allow "$1" rootfs filesystem remount
+
+	allowFSRW "$1" block_device
+	allow "$1" block_device blk_file "$rw_file_perms"
+
+	allow "$1" "$1" capability "sys_admin"
+
+}
+
+suMiscL3() {
+	# Used for ViPER|Audio
+	# This is L3 because mediaserver already has { allow mediaserver self:process execmem; } which is much more dangerous
+	allow mediaserver mediaserver_tmpfs file "execute"
+}
+
+suL0() {
+	suBackL0 "$1"
+
+	suMiscL0 "$1"
+	suReadLogs "$1"
+	suNetworkL0 "$1"
+}
+
+suL1() {
+	suMiscL1 "$1"
+	suServicesL1 "$1"
+	suNetworkL1 "$1"
+}
+
+suL3() {
+	suFirewall "$1"
+
+	# Only su_daemon can bind, don't specify domain argument
+	suBind
+
+	suMiscL3
+}
+
+suL6() {
+	suBackL6 "$1"
+}
+
+suL8() {
+	suMiscL8 "$1"
+}
+
+suL9() {
+	suMiscL9 "$1"
+
+	allowFSRW su_daemon su_daemon
+	allowFSRW su_daemon system_data_file
+	allow su_daemon "labeledfs" filesystem "associate"
+	allow su_daemon su_daemon process setfscreate
+	allow su_daemon tmpfs filesystem associate
+	allow su_daemon su_daemon file relabelfrom
+	allow su_daemon system_file file mounton
+}
+
+############### START CHANGES.SH ################
+
+print "Installing su binary..."
+
+rm -f "$suloc"
+cp "$bin/su-$arch" "$suloc" || abort "Failed to install su binary!"
+chmod 0755 "$suloc"
+
+print "The su binary has been installed to:"
+print "  $suloc"
+print
+
+print "Creating su binary domains..."
+
+# Create domains if they don't exist
+seinject -z su
+seinject -z su_device
+seinject -z su_daemon
+
+print "Adding su binary rights..."
+
+# Autotransition su's socket to su_device
+seinject -s su_daemon -f device -c file -t su_device
+seinject -s su_daemon -f device -c dir -t su_device
+allow su_device tmpfs filesystem "associate"
+
+# Transition from untrusted_app to su_client
+# TODO: other contexts want access to su?
+allowSuClient shell
+allowSuClient untrusted_app
+allowSuClient su
+
+# HTC Debug context requires SU
+seinject -e -s ssd_tool && allowSuClient ssd_tool
+
+# Allow init to execute su daemon/transition
+allow init su_daemon process "transition"
+noaudit init su_daemon process "rlimitinh siginh noatsecure"
+suDaemonRights
+
+allowLog su
+suRights su
+
+suL0 su
+suL1 su
+suL3 su
+
+# Need to set su_device/su as trusted to be accessible from other categories
+seinject -a mlstrustedobject -s su_device
+seinject -a mlstrustedsubject -s su_daemon
+seinject -a mlstrustedsubject -s su
+
+if [ "$selinuxmode" = "power" -o "$selinuxmode" = "eng" ]; then
+	print "Adding extra su binary rights..."
+
+	suL6 su
+	suL8 su
+	suL9 su
+fi
+
+if [ "$selinuxmode" = "eng" ]; then
+	print "Setting su binary to permissive..."
+
+	seinject -Z su
+fi
+
+# Samsung specific
+# Prevent system from loading policy
+if seinject -e -s knox_system_app; then
+	print "Preventing system policy reload..."
+	seinject --not -s init -t kernel -c security -p load_policy
+	for i in policyloader_app system_server system_app installd init ueventd runas drsd debuggerd vold zygote auditd servicemanager itsonbs commonplatformappdomain; do
+		seinject --not -s "$i" -t security_spota_file -c dir -p read,write
+		seinject --not -s "$i" -t security_spota_file -c file -p read,write
+	done
+fi
+
+########### CREATE SUPERUSER INIT RC ############
+
+print "Adding phh superuser init rc..."
+
+cat <<EOF > init.superuser.phh.rc
+# phh superuser init rc
+
+service su /system/bin/su --daemon
+    class main
+    seclabel u:r:su_daemon:s0
+EOF
+
+insert_after_last init.rc "import /init\\..*\\.rc" "import /init.superuser.phh.rc"
+
+###################### DONE #####################
+
+print
+print "Finished superuser setup!"
+
+exit 0

@@ -1,4 +1,4 @@
-ZIP := adb-boot-insecure.zip
+ZIP := phh-superuser.zip
 
 EXCLUDE := Makefile *.git*
 

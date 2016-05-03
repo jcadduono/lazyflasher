@@ -1,7 +1,7 @@
 #!/sbin/sh
-# Kernel Flasher installer backend
+# phh superuser ghetto installer backend
 
-tmp=/tmp/adb-boot-insecure
+tmp=/tmp/phh-superuser
 
 [ "$3" ] && {
 	zip=$3
@@ -33,6 +33,8 @@ abort() {
 }
 
 cleanup() {
+	rm /system/.rw
+	umount /system
 	[ "$zip" ] && rm /tmp/console
 }
 
@@ -47,9 +49,16 @@ setperm() {
 	find "$3" -type f -exec chmod "$2" {} \;
 }
 
+mount() {
+	mountpoint -q "$1" || /sbin/busybox mount -o rw "$1" || abort "Unable to mount $1 as rw!"
+	>> "$1/.rw" && return || /sbin/busybox mount -o remount,rw "$1"
+	>> "$1/.rw" && return || abort "Unable to write to $1!"
+}
+
 print "#######################################"
-print "#      adb boot insecure patcher      #"
-print "#      by jcadduono, version 1.0      #"
+print "#       phh superuser installer       #"
+print "#     ghetto edition by jcadduono     #"
+print "#             version 1.0             #"
 print "#######################################"
 
 # Unpack the installer
@@ -61,21 +70,7 @@ cd "$tmp"
 
 . config.sh
 
-[ "$device_names" ] && {
-	if [ ! -x "/sbin/getprop" ]; then
-		print "Warning: getprop not found! Skipping device check!"
-		return
-	fi
-	print "Checking device compatibility..."
-	match=0
-	ro_product_device=$(getprop ro.product.device)
-	ro_product_model=$(getprop ro.product.model)
-	ro_build_product=$(getprop ro.build.product)
-	for i in $device_names; do
-		[ "$ro_product_device" = "$i" -o "$ro_product_model" = "$i" -o "$ro_build_product" = "$i" ] && match=1
-	done
-	[ $match != 1 ] && abort "Unsupported device"
-}
+mount /system
 
 setperm 0755 0755 "$bin"
 
