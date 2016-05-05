@@ -9,5 +9,6 @@ setprop ro.secure 0
 setprop ro.adb.secure 0
 setprop persist.sys.usb.config adb
 setprop sys.usb.config adb
+setprop service.adb.root 1
 
 exit 0
