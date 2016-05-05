@@ -1,0 +1,14 @@
+#!/sbin/sh
+
+. "$env"
+
+[ -d "$ramdisk_patch" -a "$(ls "$ramdisk_patch")" ] || exit 0
+
+echo "Copying new files to ramdisk..."
+chmod -R 0755 "$ramdisk_patch"
+find "$ramdisk_patch" \
+	-type f -name "*.rc" -o \
+	-type f -name "fstab.*" -o \
+	-type f -name "*.prop" \
+	-exec chmod 0644 {} \;
+cp -rd "$ramdisk_patch"/. ./

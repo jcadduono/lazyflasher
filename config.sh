@@ -8,11 +8,14 @@ tmp=/tmp/kernel-flasher
 device_names=
 # leave boot_block empty for automatic (searches recovery.fstab and other locations)
 boot_block=
+# set this to /system/lib64 on a 64-bit device
+lib_dir=/system/lib
 
 bin=$tmp/tools
 ramdisk=$tmp/ramdisk
 ramdisk_patch=$ramdisk-patch
 split_img=$tmp/split-img
+modules=$tmp/modules
 
 ## end config variables
 
