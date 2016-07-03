@@ -58,7 +58,7 @@ mount() {
 print "#######################################"
 print "#     system mode SuperSU patcher     #"
 print "#      by jcadduono, version 1.5      #"
-print "#         using SuperSU 2.71          #"
+print "#        using SuperSU 2.74-2         #"
 print "#######################################"
 
 command -v getprop || {
