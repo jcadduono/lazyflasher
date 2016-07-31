@@ -1,0 +1,9 @@
+#!/sbin/sh
+
+. "$env"
+
+print "Disabling SELinux enforcement..."
+setprop ro.build.selinux 1
+setprop ro.build.selinux.enforce 0
+
+exit 0
