@@ -61,7 +61,7 @@ umount() {
 }
 
 print "#######################################"
-print "#           kernel flasher            #"
+print "#       kernel flasher (Samsung)      #"
 print "#      by jcadduono, version 1.0      #"
 print "#   add your own intro message here!  #"
 print "#######################################"
@@ -102,9 +102,9 @@ print "Boot image patching complete"
 
 [ -d "$modules" -a "$(ls "$modules")" ] && {
 	print "Installing kernel modules..."
-	mkdir -p "$lib_dir/modules"
+	mkdir -p /system/lib/modules
 	setperm 0755 0644 "$modules"
-	cp -rfd "$modules"/. "$lib_dir/modules/"
+	cp -rfd "$modules"/. /system/lib/modules/
 }
 
 cleanup
