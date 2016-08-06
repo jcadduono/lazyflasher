@@ -61,12 +61,11 @@ print "#      by jcadduono, version 1.5      #"
 print "#         using SuperSU 2.76          #"
 print "#######################################"
 
-command -v getprop || {
-	print "Warning: getprop not found! Skipping device check!"
-	unset device_names
-}
-
 [ "$device_names" ] && {
+	if [ ! -x "/sbin/getprop" ]; then
+		print "Warning: getprop not found! Skipping device check!"
+		return
+	fi
 	print "Checking device compatibility..."
 	match=0
 	ro_product_device="$(getprop ro.product.device)"
