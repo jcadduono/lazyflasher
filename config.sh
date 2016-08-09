@@ -18,3 +18,28 @@ modules=$tmp/modules
 
 ## end config variables
 
+case $(uname -m) in
+i*86*)
+	arch=x86
+	;;
+x*64*)
+	arch=x64
+	;;
+armv8*)
+	arch=arm64
+	;;
+armv7*)
+	arch=armv7
+	;;
+mips64*)
+	arch=mips64
+	;;
+mips*)
+	arch=mips
+	;;
+*)
+	arch=armv7
+	;;
+esac
+
+bin=$bin/$arch
