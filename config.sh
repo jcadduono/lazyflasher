@@ -3,14 +3,12 @@
 ## start config variables
 
 tmp=/tmp/no-verity-opt-encrypt
-# leave boot_block empty for automatic (searches recovery.fstab and other locations)
-boot_block=
-# leave device_names empty to allow flashing on any device
-device_names=
 bin=$tmp/tools
 ramdisk=$tmp/ramdisk
 ramdisk_patch=$ramdisk-patch
 split_img=$tmp/split-img
+# set this only if boot-patcher.sh can't find your boot partition
+boot_block=
 
 ## end config variables
 
