@@ -110,12 +110,14 @@ dump_recovery() {
 determine_ramdisk_format() {
 	magicbytes=$(hexdump -vn2 -e '2/1 "%x"' $split_img/recovery.img-ramdisk)
 	case "$magicbytes" in
-		425a) rdformat=bzip2; decompress=bzip2 ; abort "BZ2 ramdisks are currently not supported" ;; #compress="bzip2 -9c" ;;
-		1f8b|1f9e) rdformat=gzip; decompress=gzip ; compress="gzip -9c" ;;
-		0221) rdformat=lz4; decompress=$bin/lz4 ; compress="$bin/lz4 -9" ;;
-		5d00) rdformat=lzma; decompress=lzma ; abort "LZMA ramdisks are currently not supported" ;; #compress="lzma -c" ;;
-		894c) rdformat=lzo; decompress=lzop ; abort "LZO ramdisks are currently not supported" ;; #compress="lzop -9c" ;;
-		fd37) rdformat=xz; decompress=xz ; abort "XZ ramdisks are currently not supported" ;; #compress="xz --check=crc32 --lzma2=dict=8MiB" ;;
+		425a) rdformat=bzip2; decompress="$bin/bzip2 -dc"; compress="$bin/bzip2 -9c" ;;
+		1f8b|1f9e) rdformat=gzip; decompress="gzip -dc"; compress="gzip -9c" ;;
+		0221) rdformat=lz4; decompress="$bin/lz4 -d"; compress="$bin/lz4 -9" ;;
+		894c) rdformat=lzo; decompress="lzop -dc"; abort "lzop -9c" ;;
+		5d00) rdformat=lzma; decompress="xz -dc"; compress="xz --format=lzma --lzma1=dict=16MiB -9";
+			abort "LZMA ramdisks are currently not supported" ;;
+		fd37) rdformat=xz; decompress="xz -dc"; compress="xz --check=crc32 --lzma2=dict=16MiB -9";
+			abort "XZ ramdisks are currently not supported" ;;
 		*) abort "Unknown ramdisk compression format ($magicbytes)" ;;
 	esac
 	print "Detected ramdisk compression format: $rdformat"
@@ -125,7 +127,7 @@ determine_ramdisk_format() {
 # extract the old ramdisk contents
 dump_ramdisk() {
 	cd $ramdisk
-	$decompress -d < $split_img/recovery.img-ramdisk | cpio -i
+	$decompress < $split_img/recovery.img-ramdisk | cpio -i
 	[ $? != 0 ] && abort "Unpacking ramdisk failed"
 }
 
