@@ -9,9 +9,9 @@ console=$(cat /tmp/console)
 cd "$tmp"
 . config.sh
 
-chmod -R 755 $bin
-rm -rf $ramdisk $split_img
-mkdir $ramdisk $split_img
+chmod -R 755 "$bin"
+rm -rf "$ramdisk" "$split_img"
+mkdir "$ramdisk" "$split_img"
 
 print() {
 	[ "$1" ] && {
@@ -35,13 +35,13 @@ abort() {
 # find the location of the recovery block
 find_recovery() {
 	verify_block() {
-		boot_block=$(readlink -f "$boot_block")
+		recovery_block=$(readlink -f "$recovery_block")
 		# if the recovery block is a file, we must use dd
-		if [ -f "$boot_block" ]; then
+		if [ -f "$recovery_block" ]; then
 			use_dd=true
 		# if the recovery block is a block device, we use flash_image when possible
-		elif [ -b "$boot_block" ]; then
-			case "$boot_block" in
+		elif [ -b "$recovery_block" ]; then
+			case "$recovery_block" in
 				/dev/block/bml*|/dev/block/mtd*|/dev/block/mmc*)
 					use_dd=false ;;
 				*)
@@ -51,42 +51,42 @@ find_recovery() {
 		else
 			return 1
 		fi
-		print "Found recovery partition at: $boot_block"
+		print "Found recovery partition at: $recovery_block"
 	}
 	# if we already have recovery block set then verify and use it
-	[ "$boot_block" ] && verify_block && return
+	[ "$recovery_block" ] && verify_block && return
 	# otherwise, time to go hunting!
 	[ -f /etc/recovery.fstab ] && {
 		# recovery fstab v1
-		boot_block=$(awk '$1 == "/recovery" {print $3}' /etc/recovery.fstab)
-		[ "$boot_block" ] && verify_block && return
+		recovery_block=$(awk '$1 == "/recovery" {print $3}' /etc/recovery.fstab)
+		[ "$recovery_block" ] && verify_block && return
 		# recovery fstab v2
-		boot_block=$(awk '$2 == "/recovery" {print $1}' /etc/recovery.fstab)
-		[ "$boot_block" ] && verify_block && return
+		recovery_block=$(awk '$2 == "/recovery" {print $1}' /etc/recovery.fstab)
+		[ "$recovery_block" ] && verify_block && return
 		return 1
 	} && return
 	[ -f /fstab.qcom ] && {
 		# qcom fstab
-		boot_block=$(awk '$2 == "/recovery" {print $1}' /fstab.qcom)
-		[ "$boot_block" ] && verify_block && return
+		recovery_block=$(awk '$2 == "/recovery" {print $1}' /fstab.qcom)
+		[ "$recovery_block" ] && verify_block && return
 		return 1
 	} && return
 	[ -f /proc/emmc ] && {
 		# emmc layout
-		boot_block=$(awk '$4 == "\"recovery\"" {print $1}' /proc/emmc)
-		[ "$boot_block" ] && boot_block=/dev/block/$(echo "$boot_block" | cut -f1 -d:) && verify_block && return
+		recovery_block=$(awk '$4 == "\"recovery\"" {print $1}' /proc/emmc)
+		[ "$recovery_block" ] && recovery_block=/dev/block/$(echo "$recovery_block" | cut -f1 -d:) && verify_block && return
 		return 1
 	} && return
 	[ -f /proc/mtd ] && {
 		# mtd layout
-		boot_block=$(awk '$4 == "\"recovery\"" {print $1}' /proc/mtd)
-		[ "$boot_block" ] && boot_block=/dev/block/$(echo "$boot_block" | cut -f1 -d:) && verify_block && return
+		recovery_block=$(awk '$4 == "\"recovery\"" {print $1}' /proc/mtd)
+		[ "$recovery_block" ] && recovery_block=/dev/block/$(echo "$recovery_block" | cut -f1 -d:) && verify_block && return
 		return 1
 	} && return
 	[ -f /proc/dumchar_info ] && {
 		# mtk layout
-		boot_block=$(awk '$1 == "/recovery" {print $5}' /proc/dumchar_info)
-		[ "$boot_block" ] && verify_block && return
+		recovery_block=$(awk '$1 == "/recovery" {print $5}' /proc/dumchar_info)
+		[ "$recovery_block" ] && verify_block && return
 		return 1
 	} && return
 	abort "Unable to find recovery block location"
@@ -96,19 +96,19 @@ find_recovery() {
 dump_recovery() {
 	print "Dumping & unpacking original recovery image..."
 	if $use_dd; then
-		dd if="$boot_block" of="$tmp/recovery.img"
+		dd if="$recovery_block" of="$tmp/recovery.img"
 	else
-		dump_image "$boot_block" "$tmp/recovery.img"
+		dump_image "$recovery_block" "$tmp/recovery.img"
 	fi
 	[ $? = 0 ] || abort "Unable to read recovery partition"
-	$bin/unpackbootimg -i "$tmp/recovery.img" -o "$split_img" || {
+	"$bin/unpackbootimg" -i "$tmp/recovery.img" -o "$split_img" || {
 		abort "Unpacking recovery image failed"
 	}
 }
 
 # determine the format the ramdisk was compressed in
 determine_ramdisk_format() {
-	magicbytes=$(hexdump -vn2 -e '2/1 "%x"' $split_img/recovery.img-ramdisk)
+	magicbytes=$(hexdump -vn2 -e '2/1 "%x"' "$split_img/recovery.img-ramdisk")
 	case "$magicbytes" in
 		425a) rdformat=bzip2; decompress="$bin/bzip2 -dc"; compress="$bin/bzip2 -9c" ;;
 		1f8b|1f9e) rdformat=gzip; decompress="gzip -dc"; compress="gzip -9c" ;;
@@ -121,25 +121,25 @@ determine_ramdisk_format() {
 		*) abort "Unknown ramdisk compression format ($magicbytes)" ;;
 	esac
 	print "Detected ramdisk compression format: $rdformat"
-	command -v "$decompress" || abort "Unable to find archiver for $rdformat"
+	command -v $decompress || abort "Unable to find archiver for $rdformat"
 }
 
 # extract the old ramdisk contents
 dump_ramdisk() {
-	cd $ramdisk
-	$decompress < $split_img/recovery.img-ramdisk | cpio -i
+	cd "$ramdisk"
+	$decompress < "$split_img/recovery.img-ramdisk" | cpio -i
 	[ $? != 0 ] && abort "Unpacking ramdisk failed"
 }
 
-# if the actual boot ramdisk exists inside a parent one, use that instead
+# if the actual recovery ramdisk exists inside a parent one, use that instead
 dump_embedded_ramdisk() {
-	if [ -f "$ramdisk/sbin/ramdisk.cpio" ]; then
-		print "Found embedded boot ramdisk!"
-		mv $ramdisk $ramdisk-root
-		mkdir $ramdisk
-		cd $ramdisk
-		cpio -i < "$ramdisk-root/sbin/ramdisk.cpio" || {
-			abort "Failed to unpack embedded boot ramdisk"
+	if [ -f "$ramdisk/sbin/ramdisk-recovery.cpio" ]; then
+		print "Found embedded recovery ramdisk!"
+		mv "$ramdisk" "$ramdisk-root"
+		mkdir "$ramdisk"
+		cd "$ramdisk"
+		cpio -i < "$ramdisk-root/sbin/ramdisk-recovery.cpio" || {
+			abort "Failed to unpack embedded recovery ramdisk"
 		}
 	fi
 }
@@ -157,24 +157,24 @@ patch_ramdisk() {
 # if we moved the parent ramdisk, we should rebuild the embedded one
 build_embedded_ramdisk() {
 	if  [ -d "$ramdisk-root" ]; then
-		print "Building new embedded boot ramdisk..."
-		cd $ramdisk
-		find | cpio -o -H newc > "$ramdisk-root/sbin/ramdisk.cpio"
-		rm -rf $ramdisk
-		mv $ramdisk-root $ramdisk
+		print "Building new embedded recovery ramdisk..."
+		cd "$ramdisk"
+		find | cpio -o -H newc > "$ramdisk-root/sbin/ramdisk-recovery.cpio"
+		rm -rf "$ramdisk"
+		mv "$ramdisk-root" "$ramdisk"
 	fi
 }
 
 # build the new ramdisk
 build_ramdisk() {
 	print "Building new ramdisk..."
-	cd $ramdisk
+	cd "$ramdisk"
 	find | cpio -o -H newc | $compress > $tmp/ramdisk-new
 }
 
 # build the new recovery image
 build_recovery() {
-	cd $split_img
+	cd "$split_img"
 	kernel=
 	for image in zImage zImage-dtb Image Image-dtb Image.gz Image.gz-dtb; do
 		if [ -s $tmp/$image ]; then
@@ -196,7 +196,7 @@ build_recovery() {
 	else
 		dtb="$(ls ./*-dt)"
 	fi
-	$bin/mkbootimg \
+	"$bin/mkbootimg" \
 		--kernel "$kernel" \
 		--ramdisk "$rd" \
 		--dt "$dtb" \
@@ -214,9 +214,10 @@ build_recovery() {
 		}
 }
 
+# append Samsung enforcing tag to prevent warning at boot
 samsung_tag() {
 	if getprop ro.product.manufacturer | grep -iq '^samsung$'; then
-		echo "SEANDROIDENFORCE" >> "$tmp/boot-new.img"
+		echo "SEANDROIDENFORCE" >> "$tmp/recovery-new.img"
 	fi
 }
 
@@ -224,9 +225,9 @@ samsung_tag() {
 write_recovery() {
 	print "Writing new recovery image to memory..."
 	if $use_dd; then
-		dd if="$tmp/recovery-new.img" of="$boot_block"
+		dd if="$tmp/recovery-new.img" of="$recovery_block"
 	else
-		flash_image "$boot_block" "$tmp/recovery-new.img"
+		flash_image "$recovery_block" "$tmp/recovery-new.img"
 	fi
 	[ $? = 0 ] || abort "Failed to write recovery image! You may need to restore your recovery partition"
 }

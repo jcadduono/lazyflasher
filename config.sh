@@ -3,7 +3,7 @@
 ## start config variables
 
 tmp=/tmp/recovery-editor
-# leave boot_block empty for automatic (searches recovery.fstab and other locations)
+# leave recovery_block empty for automatic (searches recovery.fstab and other locations)
 recovery_block=
 bin=$tmp/tools
 ramdisk=$tmp/ramdisk
