@@ -110,13 +110,13 @@ dump_recovery() {
 determine_ramdisk_format() {
 	magicbytes=$(hexdump -vn2 -e '2/1 "%x"' $split_img/recovery.img-ramdisk)
 	case "$magicbytes" in
-		425a) rdformat=bzip2; decompress=bzip2 ; compress="gzip -9c" ;; #compress="bzip2 -9c" ;;
+		425a) rdformat=bzip2; decompress=bzip2 ; abort "BZ2 ramdisks are currently not supported" ;; #compress="bzip2 -9c" ;;
 		1f8b|1f9e) rdformat=gzip; decompress=gzip ; compress="gzip -9c" ;;
 		0221) rdformat=lz4; decompress=$bin/lz4 ; compress="$bin/lz4 -9" ;;
-		5d00) rdformat=lzma; decompress=lzma ; compress="gzip -9c" ;; #compress="lzma -c" ;;
-		894c) rdformat=lzo; decompress=lzop ; compress="gzip -9c" ;; #compress="lzop -9c" ;;
-		fd37) rdformat=xz; decompress=xz ; compress="gzip -9c" ;; #compress="xz --check=crc32 --lzma2=dict=2MiB" ;;
-		*) abort "Unknown ramdisk compression format ($magicbytes)." ;;
+		5d00) rdformat=lzma; decompress=lzma ; abort "LZMA ramdisks are currently not supported" ;; #compress="lzma -c" ;;
+		894c) rdformat=lzo; decompress=lzop ; abort "LZO ramdisks are currently not supported" ;; #compress="lzop -9c" ;;
+		fd37) rdformat=xz; decompress=xz ; abort "XZ ramdisks are currently not supported" ;; #compress="xz --check=crc32 --lzma2=dict=8MiB" ;;
+		*) abort "Unknown ramdisk compression format ($magicbytes)" ;;
 	esac
 	print "Detected ramdisk compression format: $rdformat"
 	command -v "$decompress" || abort "Unable to find archiver for $rdformat"
