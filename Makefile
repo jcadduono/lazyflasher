@@ -1,6 +1,6 @@
 ZIP := kernel-flasher.zip
 
-EXCLUDE := Makefile *.git*
+EXCLUDE := Makefile README.md *.git*
 
 all: $(ZIP)
 
