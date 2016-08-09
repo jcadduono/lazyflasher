@@ -1,6 +1,8 @@
-ZIP := no-verity-opt-encrypt.zip
+VERSION := 1.6
 
-EXCLUDE := Makefile *.git*
+ZIP := no-verity-opt-encrypt-$(VERSION).zip
+
+EXCLUDE := Makefile README.md *.git*
 
 all: $(ZIP)
 
