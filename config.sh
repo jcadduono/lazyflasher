@@ -2,14 +2,13 @@
 
 ## start config variables
 
+# if this is changed, it also needs to be set in boot-patcher.sh, update-binary, and patch.d-env
 tmp=/tmp/kernel-flasher
 
 # leave device_names empty to allow flashing on any device
 device_names=
 # leave boot_block empty for automatic (searches recovery.fstab and other locations)
 boot_block=
-# set this to /system/lib64 on a 64-bit device
-lib_dir=/system/lib
 
 bin=$tmp/tools
 ramdisk=$tmp/ramdisk
