@@ -50,7 +50,7 @@ setperm() {
 print "#######################################"
 print "#    dm-crypt and force encryption    #"
 print "#        disabler by jcadduono        #"
-print "#             version 1.5             #"
+print "#             version 1.6             #"
 print "#######################################"
 
 # Unpack the installer
