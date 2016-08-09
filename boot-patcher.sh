@@ -212,6 +212,13 @@ build_boot() {
 		}
 }
 
+# append Samsung enforcing tag to prevent warning at boot
+samsung_tag() {
+	if getprop ro.product.manufacturer | grep -iq '^samsung$'; then
+		echo "SEANDROIDENFORCE" >> "$tmp/boot-new.img"
+	fi
+}
+
 # write the new boot image to boot block
 write_boot() {
 	print "Writing new boot image to memory..."
@@ -244,6 +251,8 @@ build_embedded_ramdisk
 build_ramdisk
 
 build_boot
+
+samsung_tag
 
 write_boot
 
