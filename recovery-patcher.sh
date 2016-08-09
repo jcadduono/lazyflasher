@@ -212,6 +212,12 @@ build_recovery() {
 		}
 }
 
+samsung_tag() {
+	if getprop ro.product.manufacturer | grep -iq '^samsung$'; then
+		echo "SEANDROIDENFORCE" >> "$tmp/boot-new.img"
+	fi
+}
+
 # write the new recovery image to recovery block
 write_recovery() {
 	print "Writing new recovery image to memory..."
@@ -244,6 +250,8 @@ build_embedded_ramdisk
 build_ramdisk
 
 build_recovery
+
+samsung_tag
 
 write_recovery
 
