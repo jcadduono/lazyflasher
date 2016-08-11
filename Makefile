@@ -1,4 +1,4 @@
-VERSION := 2.0
+VERSION := 2.1
 
 ZIP := no-verity-opt-encrypt-$(VERSION).zip
 
