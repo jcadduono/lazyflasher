@@ -9,9 +9,9 @@ console=$(cat /tmp/console)
 cd "$tmp"
 . config.sh
 
-chmod -R 755 $bin
-rm -rf $ramdisk $split_img
-mkdir $ramdisk $split_img
+chmod -R 755 "$bin"
+rm -rf "$ramdisk" "$split_img"
+mkdir "$ramdisk" "$split_img"
 
 print() {
 	[ "$1" ] && {
@@ -101,31 +101,33 @@ dump_boot() {
 		dump_image "$boot_block" "$tmp/boot.img"
 	fi
 	[ $? = 0 ] || abort "Unable to read boot partition"
-	$bin/unpackbootimg -i "$tmp/boot.img" -o "$split_img" || {
+	"$bin/unpackbootimg" -i "$tmp/boot.img" -o "$split_img" || {
 		abort "Unpacking boot image failed"
 	}
 }
 
 # determine the format the ramdisk was compressed in
 determine_ramdisk_format() {
-	magicbytes=$(hexdump -vn2 -e '2/1 "%x"' $split_img/boot.img-ramdisk)
+	magicbytes=$(hexdump -vn2 -e '2/1 "%x"' "$split_img/boot.img-ramdisk")
 	case "$magicbytes" in
-		425a) rdformat=bzip2; decompress=bzip2 ; compress="gzip -9c" ;; #compress="bzip2 -9c" ;;
-		1f8b|1f9e) rdformat=gzip; decompress=gzip ; compress="gzip -9c" ;;
-		0221) rdformat=lz4; decompress=$bin/lz4 ; compress="$bin/lz4 -9" ;;
-		5d00) rdformat=lzma; decompress=lzma ; compress="gzip -9c" ;; #compress="lzma -c" ;;
-		894c) rdformat=lzo; decompress=lzop ; compress="gzip -9c" ;; #compress="lzop -9c" ;;
-		fd37) rdformat=xz; decompress=xz ; compress="gzip -9c" ;; #compress="xz --check=crc32 --lzma2=dict=2MiB" ;;
-		*) abort "Unknown ramdisk compression format ($magicbytes)." ;;
+		425a) rdformat=bzip2; decompress="$bin/bzip2 -dc"; compress="$bin/bzip2 -9c" ;;
+		1f8b|1f9e) rdformat=gzip; decompress="gzip -dc"; compress="gzip -9c" ;;
+		0221) rdformat=lz4; decompress="$bin/lz4 -d"; compress="$bin/lz4 -9" ;;
+		894c) rdformat=lzo; decompress="lzop -dc"; abort "lzop -9c" ;;
+		5d00) rdformat=lzma; decompress="xz -dc"; compress="xz --format=lzma --lzma1=dict=16MiB -9";
+			abort "LZMA ramdisks are currently not supported" ;;
+		fd37) rdformat=xz; decompress="xz -dc"; compress="xz --check=crc32 --lzma2=dict=16MiB -9";
+			abort "XZ ramdisks are currently not supported" ;;
+		*) abort "Unknown ramdisk compression format ($magicbytes)" ;;
 	esac
 	print "Detected ramdisk compression format: $rdformat"
-	command -v "$decompress" || abort "Unable to find archiver for $rdformat"
+	command -v $decompress || abort "Unable to find archiver for $rdformat"
 }
 
 # extract the old ramdisk contents
 dump_ramdisk() {
-	cd $ramdisk
-	$decompress -d < $split_img/boot.img-ramdisk | cpio -i
+	cd "$ramdisk"
+	$decompress < "$split_img/boot.img-ramdisk" | cpio -i
 	[ $? != 0 ] && abort "Unpacking ramdisk failed"
 }
 
@@ -133,9 +135,9 @@ dump_ramdisk() {
 dump_embedded_ramdisk() {
 	if [ -f "$ramdisk/sbin/ramdisk.cpio" ]; then
 		print "Found embedded boot ramdisk!"
-		mv $ramdisk $ramdisk-root
-		mkdir $ramdisk
-		cd $ramdisk
+		mv "$ramdisk" "$ramdisk-root"
+		mkdir "$ramdisk"
+		cd "$ramdisk"
 		cpio -i < "$ramdisk-root/sbin/ramdisk.cpio" || {
 			abort "Failed to unpack embedded boot ramdisk"
 		}
@@ -158,23 +160,23 @@ patch_ramdisk() {
 build_embedded_ramdisk() {
 	if  [ -d "$ramdisk-root" ]; then
 		print "Building new embedded boot ramdisk..."
-		cd $ramdisk
+		cd "$ramdisk"
 		find | cpio -o -H newc > "$ramdisk-root/sbin/ramdisk.cpio"
-		rm -rf $ramdisk
-		mv $ramdisk-root $ramdisk
+		rm -rf "$ramdisk"
+		mv "$ramdisk-root" "$ramdisk"
 	fi
 }
 
 # build the new ramdisk
 build_ramdisk() {
 	print "Building new ramdisk..."
-	cd $ramdisk
+	cd "$ramdisk"
 	find | cpio -o -H newc | $compress > $tmp/ramdisk-new
 }
 
 # build the new boot image
 build_boot() {
-	cd $split_img
+	cd "$split_img"
 	kernel=
 	for image in zImage zImage-dtb Image Image-dtb Image.gz Image.gz-dtb; do
 		if [ -s $tmp/$image ]; then
@@ -196,7 +198,7 @@ build_boot() {
 	else
 		dtb="$(ls ./*-dt)"
 	fi
-	$bin/mkbootimg \
+	"$bin/mkbootimg" \
 		--kernel "$kernel" \
 		--ramdisk "$rd" \
 		--dt "$dtb" \

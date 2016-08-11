@@ -5,8 +5,6 @@
 tmp=/tmp/system-supersu
 # leave boot_block empty for automatic (searches recovery.fstab and other locations)
 boot_block=
-# leave device_names empty to allow flashing on any device
-device_names=
 bin=$tmp/tools
 ramdisk=$tmp/ramdisk
 ramdisk_patch=$ramdisk-patch
@@ -14,34 +12,35 @@ split_img=$tmp/split-img
 
 ## end config variables
 
-case $(uname -m) in
-i*86*)
+case $(getprop ro.product.cpu.abi) in
+x86)
 	arch=x86
 	libdir=/system/lib
 	;;
-x*64*)
+x86_64)
 	arch=x64
 	libdir=/system/lib64
 	;;
-armv8*)
+arm64*)
 	arch=arm64
 	libdir=/system/lib64
 	;;
-armv7*)
+armeabi*)
 	arch=armv7
 	libdir=/system/lib
 	;;
-mips64*)
+mips64)
 	arch=mips64
 	libdir=/system/lib64
 	;;
-mips*)
+mips)
 	arch=mips
 	libdir=/system/lib
 	;;
 *)
-	arch=arm
+	arch=armv7
 	libdir=/system/lib
 	;;
 esac
 
+bin=$bin/$arch
