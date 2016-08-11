@@ -18,23 +18,23 @@ modules=$tmp/modules
 
 ## end config variables
 
-case $(uname -m) in
-i*86*)
+case $(getprop ro.product.cpu.abi) in
+x86)
 	arch=x86
 	;;
-x*64*)
+x86_64)
 	arch=x64
 	;;
-armv8*)
+arm64*)
 	arch=arm64
 	;;
-armv7*)
+armeabi*)
 	arch=armv7
 	;;
-mips64*)
+mips64)
 	arch=mips64
 	;;
-mips*)
+mips)
 	arch=mips
 	;;
 *)
