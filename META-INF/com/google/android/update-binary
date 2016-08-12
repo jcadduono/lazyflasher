@@ -57,7 +57,7 @@ mount() {
 
 print "#######################################"
 print "#     system mode SuperSU patcher     #"
-print "#      by jcadduono, version 1.6      #"
+print "#      by jcadduono, version 2.0      #"
 print "#         using SuperSU 2.76          #"
 print "#######################################"
 

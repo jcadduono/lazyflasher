@@ -1,6 +1,8 @@
-ZIP := system-supersu.zip
+VERSION ?= 2.0
 
-EXCLUDE := Makefile *.git*
+ZIP := system-supersu-$(VERSION).zip
+
+EXCLUDE := Makefile *.git* README.md *.zip *.sha1
 
 all: $(ZIP)
 
@@ -13,5 +15,5 @@ $(ZIP):
 	@echo "Done."
 
 clean:
-	@rm -f "$(ZIP)" "$(ZIP).sha1"
+	@rm -f *.zip *.sha1
 	@echo "Done."
