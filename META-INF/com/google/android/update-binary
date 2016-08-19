@@ -49,7 +49,7 @@ setperm() {
 
 print "#######################################"
 print "#      adb boot insecure patcher      #"
-print "#      by jcadduono, version 1.0      #"
+print "#      by jcadduono, version 2.0      #"
 print "#######################################"
 
 # Unpack the installer
