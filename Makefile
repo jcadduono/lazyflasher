@@ -1,6 +1,8 @@
-ZIP := boot-editor.zip
+VERSION := 1.0
 
-EXCLUDE := Makefile *.git*
+ZIP := boot-editor-$(VERSION).zip
+
+EXCLUDE := Makefile README.md *.git*
 
 all: $(ZIP)
 
