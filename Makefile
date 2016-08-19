@@ -1,6 +1,8 @@
-ZIP := adb-boot-insecure.zip
+VERSION := 1.0
 
-EXCLUDE := Makefile *.git*
+ZIP := adb-boot-insecure-$(VERSION).zip
+
+EXCLUDE := Makefile README.md *.git*
 
 all: $(ZIP)
 
