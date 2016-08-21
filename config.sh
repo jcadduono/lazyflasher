@@ -4,8 +4,6 @@
 
 tmp=/tmp/adb-boot-insecure
 
-# leave device_names empty to allow flashing on any device
-device_names=
 # leave boot_block empty for automatic (searches recovery.fstab and other locations)
 boot_block=
 

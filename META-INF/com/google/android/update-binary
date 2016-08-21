@@ -61,22 +61,6 @@ cd "$tmp"
 
 . config.sh
 
-[ "$device_names" ] && {
-	if [ ! -x "/sbin/getprop" ]; then
-		print "Warning: getprop not found! Skipping device check!"
-		return
-	fi
-	print "Checking device compatibility..."
-	match=0
-	ro_product_device=$(getprop ro.product.device)
-	ro_product_model=$(getprop ro.product.model)
-	ro_build_product=$(getprop ro.build.product)
-	for i in $device_names; do
-		[ "$ro_product_device" = "$i" -o "$ro_product_model" = "$i" -o "$ro_build_product" = "$i" ] && match=1
-	done
-	[ $match != 1 ] && abort "Unsupported device"
-}
-
 setperm 0755 0755 "$bin"
 
 print "Running boot image patcher..."
