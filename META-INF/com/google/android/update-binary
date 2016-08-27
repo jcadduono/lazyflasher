@@ -48,9 +48,10 @@ setperm() {
 }
 
 print "#######################################"
-print "#    dm-crypt and force encryption    #"
+print "#    Samsung Anti-Root Protection     #"
 print "#        disabler by jcadduono        #"
-print "#             version 2.1             #"
+print "#             version 2.2             #"
+print "#     Powered by Chainfire magic      #"
 print "#######################################"
 
 # Unpack the installer

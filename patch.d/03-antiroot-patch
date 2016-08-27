@@ -41,6 +41,7 @@ if [ -f "$kernel_image" ]; then
 
 	patched_sha="$(sha1sum "$kernel_patched" | cut -f1 -d' ')"
 	print "Patched SHA1: $patched_sha"
+
 	if [ "$original_sha" = "$patched_sha" ]; then
 		abort "Patch failed, root protection code not found"
 	fi
