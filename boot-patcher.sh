@@ -1,7 +1,7 @@
 #!/sbin/sh
 # LazyFlasher boot image patcher script by jcadduono
 
-tmp=/tmp/no-verity-opt-encrypt
+tmp=/tmp/samsung-antiroot-removal
 
 console=$(cat /tmp/console)
 [ "$console" ] || console=/proc/$$/fd/1

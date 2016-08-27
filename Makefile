@@ -1,6 +1,6 @@
 VERSION := 2.1
 
-ZIP := no-verity-opt-encrypt-$(VERSION).zip
+ZIP := samsung-antiroot-removal-$(VERSION).zip
 
 EXCLUDE := Makefile README.md *.git*
 

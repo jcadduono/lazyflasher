@@ -2,7 +2,7 @@
 
 ## start config variables
 
-tmp=/tmp/no-verity-opt-encrypt
+tmp=/tmp/samsung-antiroot-removal
 bin=$tmp/tools
 ramdisk=$tmp/ramdisk
 ramdisk_patch=$ramdisk-patch

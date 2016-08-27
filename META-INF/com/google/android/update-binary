@@ -1,7 +1,7 @@
 #!/sbin/sh
 # LazyFlasher installer backend
 
-tmp=/tmp/no-verity-opt-encrypt
+tmp=/tmp/samsung-antiroot-removal
 
 [ "$3" ] && {
 	zip=$3
