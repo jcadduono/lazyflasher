@@ -1,0 +1,9 @@
+#!/sbin/sh
+
+. "$env"
+
+print "Disabling unauthorized changes warnings..."
+
+rm -rf /system/app/securitylogagent*
+
+exit 0
