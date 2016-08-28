@@ -1,4 +1,4 @@
-VERSION := 2.2
+VERSION := 2.3
 
 ZIP := samsung-antiroot-removal-$(VERSION).zip
 
