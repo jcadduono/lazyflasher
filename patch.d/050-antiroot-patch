@@ -1,0 +1,56 @@
+#!/sbin/sh
+
+. "$env"
+
+print "Disabling Samsung Root Protection in kernel image..."
+print "(using Chainfire-discovered magic)"
+
+case $arch in
+arm64)
+	hex_search="\
+\\x49\\x01\\x00\\x54\\x01\\x14\\x40\\xB9\
+\\x3F\\xA0\\x0F\\x71\\xE9\\x00\\x00\\x54\
+\\x01\\x08\\x40\\xB9\\x3F\\xA0\\x0F\\x71\
+\\x89\\x00\\x00\\x54\\x00\\x18\\x40\\xB9\
+\\x1F\\xA0\\x0F\\x71\\x88\
+"
+	hex_replace="\
+\\xA1\\x02\\x00\\x54\\x01\\x14\\x40\\xB9\
+\\x3F\\xA0\\x0F\\x71\\x40\\x02\\x00\\x54\
+\\x01\\x08\\x40\\xB9\\x3F\\xA0\\x0F\\x71\
+\\xE0\\x01\\x00\\x54\\x00\\x18\\x40\\xB9\
+\\x1F\\xA0\\x0F\\x71\\x81\
+"
+	;;
+*)
+	abort "Unsupported arch: $arch"
+	;;
+esac
+
+cd "$split_img" || abort "Can't enter $split_img directory!"
+
+kernel_image="$(ls ./*-zImage)"
+
+if [ -f "$kernel_image" ]; then
+	kernel_patched=$kernel_image-new
+
+	original_sha="$(sha1sum "$kernel_image" | cut -f1 -d' ')"
+	print "Original SHA1: $original_sha"
+
+	"$bin/bbe" -e "s/$hex_search/$hex_replace/" "$kernel_image" > "$kernel_patched"
+
+	patched_sha="$(sha1sum "$kernel_patched" | cut -f1 -d' ')"
+	print "Patched SHA1: $patched_sha"
+
+	if [ "$original_sha" = "$patched_sha" ]; then
+		print "Patch failed, root protection code not found"
+		exit 0
+	fi
+
+	rm "$kernel_image"
+	mv "$kernel_patched" "$kernel_image"
+
+	print "Success!"
+fi
+
+exit 0
