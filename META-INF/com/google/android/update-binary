@@ -61,8 +61,8 @@ umount() {
 }
 
 print "#######################################"
-print "#       kernel flasher (Samsung)      #"
-print "#      by jcadduono, version 1.1      #"
+print "#      kernel flasher (gracelte)      #"
+print "#      by jcadduono, version 1.0      #"
 print "#   add your own intro message here!  #"
 print "#######################################"
 

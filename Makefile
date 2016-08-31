@@ -1,4 +1,6 @@
-ZIP := kernel-flasher-gracelte.zip
+VERSION := 1.0
+
+ZIP := kernel-flasher-gracelte-$(VERSION).zip
 
 EXCLUDE := Makefile README.md *.git*
 
