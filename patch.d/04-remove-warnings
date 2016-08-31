@@ -4,6 +4,6 @@
 
 print "Disabling unauthorized changes warnings..."
 
-rm -rf /system/app/securitylogagent*
+rm -rf /system/app/SecurityLogAgent*
 
 exit 0
