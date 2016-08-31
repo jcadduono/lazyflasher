@@ -1,7 +1,7 @@
 #!/sbin/sh
 # Kernel Flasher installer backend
 
-tmp=/tmp/kernel-flasher
+tmp=/tmp/kernel-flasher-gracelte
 
 [ "$3" ] && {
 	zip=$3

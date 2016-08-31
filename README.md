@@ -34,7 +34,7 @@ Variables available to patch.d scripts:
 ```
 $found_prop - true if default.prop exists in the ramdisk
 $found_build_prop - true if build.prop exists in /system
-$tmp - full path to installation extraction root (ex. /tmp/kernel-flasher)
+$tmp - full path to installation extraction root (ex. /tmp/kernel-flasher-gracelte)
 $ramdisk - full path to extracted ramdisk root (current directory of patch.d scripts)
 $ramdisk_patch - full path to new ramdisk files (applied automatically over the current ramdisk)
 $split_img - full path to extracted contents of boot image (including cmdline)

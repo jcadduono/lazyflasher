@@ -3,7 +3,7 @@
 ## start config variables
 
 # if this is changed, it also needs to be set in boot-patcher.sh, update-binary, and patch.d-env
-tmp=/tmp/kernel-flasher
+tmp=/tmp/kernel-flasher-gracelte
 
 # leave device_names empty to allow flashing on any device
 device_names=
