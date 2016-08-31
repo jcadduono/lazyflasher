@@ -43,7 +43,8 @@ if [ -f "$kernel_image" ]; then
 	print "Patched SHA1: $patched_sha"
 
 	if [ "$original_sha" = "$patched_sha" ]; then
-		abort "Patch failed, root protection code not found"
+		print "Patch failed, root protection code not found"
+		exit 0
 	fi
 
 	rm "$kernel_image"
