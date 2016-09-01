@@ -1,4 +1,10 @@
-ZIP := kernel-flasher.zip
+NAME := kernel-flasher
+
+VERSION := 1.1
+
+DATE := $(shell date +'%Y%m%d-%H%M')
+
+ZIP := $(NAME)-$(VERSION)-$(DATE).zip
 
 EXCLUDE := Makefile README.md *.git*
 
@@ -13,5 +19,5 @@ $(ZIP):
 	@echo "Done."
 
 clean:
-	@rm -f "$(ZIP)" "$(ZIP).sha1"
+	@rm -vf "$(NAME)-"*.zip*
 	@echo "Done."
