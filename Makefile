@@ -1,6 +1,10 @@
+NAME := kernel-flasher-gracelte
+
 VERSION := 1.0
 
-ZIP := kernel-flasher-gracelte-$(VERSION).zip
+DATE := $(shell date +'%Y%m%d-%H%M')
+
+ZIP := $(NAME)-$(VERSION)-$(DATE).zip
 
 EXCLUDE := Makefile README.md *.git*
 
@@ -15,5 +19,5 @@ $(ZIP):
 	@echo "Done."
 
 clean:
-	@rm -f "$(ZIP)" "$(ZIP).sha1"
+	@rm -vf "$(NAME)-"*.zip*
 	@echo "Done."
