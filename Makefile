@@ -1,6 +1,6 @@
 NAME := kernel-flasher
 
-VERSION := 1.1
+VERSION := 2.0
 
 DATE := $(shell date +'%Y%m%d-%H%M')
 
