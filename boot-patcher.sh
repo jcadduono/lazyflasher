@@ -134,18 +134,21 @@ dump_ramdisk() {
 # execute all scripts in patch.d
 patch_ramdisk() {
 	print "Running ramdisk patching scripts..."
-	find "$tmp/patch.d/" -type f | sort > "$tmp/patchfiles"
+	cd "$tmp"
+	find patch.d/ -type f | sort > patchfiles
 	while read -r patchfile; do
 		print "Executing: $(basename "$patchfile")"
-		env="$tmp/patch.d-env" sh "$patchfile" || exit 1
-	done < "$tmp/patchfiles"
+		env="$tmp/patch.d-env" sh "$patchfile" || {
+			abort "Script failed: $(basename "$patchfile")"
+		}
+	done < patchfiles
 }
 
 # build the new ramdisk
 build_ramdisk() {
 	print "Building new ramdisk..."
 	cd "$ramdisk"
-	find | cpio -o -H newc | $compress > $tmp/ramdisk-new
+	find | cpio -o -H newc | $compress > "$tmp/ramdisk-new"
 }
 
 # build the new boot image
@@ -153,20 +156,20 @@ build_boot() {
 	cd "$split_img"
 	kernel=
 	for image in zImage zImage-dtb Image Image-dtb Image.gz Image.gz-dtb; do
-		if [ -s $tmp/$image ]; then
+		if [ -s "$tmp/$image" ]; then
 			kernel="$tmp/$image"
 			print "Found replacement kernel $image!"
 			break
 		fi
 	done
 	[ "$kernel" ] || kernel="$(ls ./*-zImage)"
-	if [ -s $tmp/ramdisk-new ]; then
+	if [ -s "$tmp/ramdisk-new" ]; then
 		rd="$tmp/ramdisk-new"
 		print "Found replacement ramdisk image!"
 	else
 		rd="$(ls ./*-ramdisk)"
 	fi
-	if [ -s $tmp/dtb.img ]; then
+	if [ -s "$tmp/dtb.img" ]; then
 		dtb="$tmp/dtb.img"
 		print "Found replacement device tree image!"
 	else
@@ -185,7 +188,7 @@ build_boot() {
 		--ramdisk_offset "$(cat ./*-ramdisk_offset)" \
 		--second_offset "$(cat ./*-second_offset)" \
 		--tags_offset "$(cat ./*-tags_offset)" \
-		-o $tmp/boot-new.img || {
+		-o "$tmp/boot-new.img" || {
 			abort "Repacking boot image failed"
 		}
 }
@@ -194,6 +197,21 @@ build_boot() {
 samsung_tag() {
 	if getprop ro.product.manufacturer | grep -iq '^samsung$'; then
 		echo "SEANDROIDENFORCE" >> "$tmp/boot-new.img"
+	fi
+}
+
+# verify that the boot image exists and can fit the partition
+verify_size() {
+	print "Verifying boot image size..."
+	cd "$tmp"
+	[ -s boot-new.img ] || abort "New boot image not found!"
+	old_sz=$(wc -c < boot.img)
+	new_sz=$(wc -c < boot-new.img)
+	if [ "$new_sz" -gt "$old_sz" ]; then
+		size_diff=$((new_sz - old_sz))
+		print " Partition size: $old_sz bytes"
+		print "Boot image size: $new_sz bytes"
+		abort "Boot image is $size_diff bytes too large for partition"
 	fi
 }
 
@@ -227,6 +245,8 @@ build_ramdisk
 build_boot
 
 samsung_tag
+
+verify_size
 
 write_boot
 
