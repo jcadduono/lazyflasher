@@ -1,7 +1,7 @@
 #!/sbin/sh
 # Kernel Flasher installer backend
 
-tmp=/tmp/kernel-flasher-gracelte
+tmp=/tmp/kernel-flasher-herolte
 
 [ "$3" ] && {
 	zip=$3
@@ -61,7 +61,7 @@ umount() {
 }
 
 print "#######################################"
-print "#      kernel flasher (gracelte)      #"
+print "#      kernel flasher  (herolte)      #"
 print "#      by jcadduono, version 1.0      #"
 print "#   add your own intro message here!  #"
 print "#######################################"

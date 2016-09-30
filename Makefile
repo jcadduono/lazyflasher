@@ -1,4 +1,4 @@
-NAME := kernel-flasher-gracelte
+NAME := kernel-flasher-herolte
 
 VERSION := 1.0
 

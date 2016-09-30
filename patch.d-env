@@ -1,6 +1,6 @@
 #!/bin/sh
 
-tmp=/tmp/kernel-flasher-gracelte
+tmp=/tmp/kernel-flasher-herolte
 
 console=$(cat /tmp/console)
 [ "$console" ] || console=/proc/$$/fd/1
