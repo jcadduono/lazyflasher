@@ -2,15 +2,22 @@
 
 . "$env"
 
-[ -f sepolicy ] && {
-	print "Patching the sepolicy for SuperSU..."
-	LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$bin" $bin/supolicy --file sepolicy sepolicy_1
+[ -f sepolicy ] || abort "sepolicy not found!"
+
+print "Patching the sepolicy for SuperSU..."
+LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$bin" $bin/supolicy --file sepolicy sepolicy_1
 }
-[ -f sepolicy_1 ] && {
-	rm sepolicy
-	mv sepolicy_1 sepolicy
-	chmod 0644 sepolicy
-	print "Success!"
-} || {
-	abort "Unable to patch the sepolicy!"
-}
+
+[ -f sepolicy_1 ] || abort "Failed to patch the sepolicy!"
+
+cat sepolicy_1 > sepolicy
+rm sepolicy_1
+print "Success!"
+
+print "Setting SuperSU install mode to system..."
+cat > "/system/.supersu" << EOF
+SYSTEMLESS=false
+PATCHBOOTIMAGE=false
+EOF
+
+exit 0

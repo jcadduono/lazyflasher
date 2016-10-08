@@ -76,18 +76,6 @@ print "Detected architecture: $arch"
 
 setperm 0755 0755 "$bin"
 
-print "Installing SuperSU policy binaries..."
-setperm 0755 0755 arch
-rm -f "/system/xbin/supolicy" "$libdir/libsupol.so"
-cp "arch/$arch/supolicy" "/system/xbin/"
-cp "arch/$arch/libsupol.so" "$libdir/"
-
-print "Setting SuperSU install mode to system..."
-cat > "/system/.supersu" << EOF
-SYSTEMLESS=false
-PATCHBOOTIMAGE=false
-EOF
-
 print "Running boot image patcher..."
 sh boot-patcher.sh || abort
 
