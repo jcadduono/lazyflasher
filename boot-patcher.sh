@@ -1,7 +1,7 @@
 #!/sbin/sh
 # LazyFlasher boot image patcher script by jcadduono
 
-tmp=/tmp/no-verity-opt-encrypt
+tmp=/tmp/note7-disable-charging-limit
 
 console=$(cat /tmp/console)
 [ "$console" ] || console=/proc/$$/fd/1
@@ -106,74 +106,6 @@ dump_boot() {
 	}
 }
 
-# determine the format the ramdisk was compressed in
-determine_ramdisk_format() {
-	magicbytes=$(hexdump -vn2 -e '2/1 "%x"' "$split_img/boot.img-ramdisk")
-	case "$magicbytes" in
-		425a) rdformat=bzip2; decompress="$bin/bzip2 -dc"; compress="$bin/bzip2 -9c" ;;
-		1f8b|1f9e) rdformat=gzip; decompress="gzip -dc"; compress="gzip -9c" ;;
-		0221) rdformat=lz4; decompress="$bin/lz4 -d"; compress="$bin/lz4 -9" ;;
-		894c) rdformat=lzo; decompress="lzop -dc"; abort "lzop -9c" ;;
-		5d00) rdformat=lzma; decompress="xz -dc"; compress="xz --format=lzma --lzma1=dict=16MiB -9";
-			abort "LZMA ramdisks are currently not supported" ;;
-		fd37) rdformat=xz; decompress="xz -dc"; compress="xz --check=crc32 --lzma2=dict=16MiB -9";
-			abort "XZ ramdisks are currently not supported" ;;
-		*) abort "Unknown ramdisk compression format ($magicbytes)" ;;
-	esac
-	print "Detected ramdisk compression format: $rdformat"
-	command -v $decompress || abort "Unable to find archiver for $rdformat"
-}
-
-# extract the old ramdisk contents
-dump_ramdisk() {
-	cd "$ramdisk"
-	$decompress < "$split_img/boot.img-ramdisk" | cpio -i
-	[ $? != 0 ] && abort "Unpacking ramdisk failed"
-}
-
-# if the actual boot ramdisk exists inside a parent one, use that instead
-dump_embedded_ramdisk() {
-	if [ -f "$ramdisk/sbin/ramdisk.cpio" ]; then
-		print "Found embedded boot ramdisk!"
-		mv "$ramdisk" "$ramdisk-root"
-		mkdir "$ramdisk"
-		cd "$ramdisk"
-		cpio -i < "$ramdisk-root/sbin/ramdisk.cpio" || {
-			abort "Failed to unpack embedded boot ramdisk"
-		}
-	fi
-}
-
-# execute all scripts in patch.d
-patch_ramdisk() {
-	print "Running ramdisk patching scripts..."
-	find "$tmp/patch.d/" -type f | sort > "$tmp/patchfiles"
-	while read -r patchfile; do
-		print "Executing: $(basename "$patchfile")"
-		env="$tmp/patch.d-env" sh "$patchfile" || {
-			abort "Script failed: $(basename "$patchfile")"
-		}
-	done < "$tmp/patchfiles"
-}
-
-# if we moved the parent ramdisk, we should rebuild the embedded one
-build_embedded_ramdisk() {
-	if  [ -d "$ramdisk-root" ]; then
-		print "Building new embedded boot ramdisk..."
-		cd "$ramdisk"
-		find | cpio -o -H newc > "$ramdisk-root/sbin/ramdisk.cpio"
-		rm -rf "$ramdisk"
-		mv "$ramdisk-root" "$ramdisk"
-	fi
-}
-
-# build the new ramdisk
-build_ramdisk() {
-	print "Building new ramdisk..."
-	cd "$ramdisk"
-	find | cpio -o -H newc | $compress > $tmp/ramdisk-new
-}
-
 # build the new boot image
 build_boot() {
 	cd "$split_img"
@@ -223,11 +155,26 @@ samsung_tag() {
 	fi
 }
 
+# verify that the boot image exists and can fit the partition
+verify_size() {
+	print "Verifying boot image size..."
+	cd "$tmp"
+	[ -s boot-new.img ] || abort "New boot image not found!"
+	old_sz=$(wc -c < boot.img)
+	new_sz=$(wc -c < boot-new.img)
+	if [ "$new_sz" -gt "$old_sz" ]; then
+		size_diff=$((new_sz - old_sz))
+		print " Partition size: $old_sz bytes"
+		print "Boot image size: $new_sz bytes"
+		abort "Boot image is $size_diff bytes too large for partition"
+	fi
+}
+
 # write the new boot image to boot block
 write_boot() {
 	print "Writing new boot image to memory..."
 	if $use_dd; then
-		dd if="$tmp/boot-new.img" of="$boot_block"
+		dd if="$tmp/boot-new.img" of="$boot_block" bs=131072
 	else
 		flash_image "$boot_block" "$tmp/boot-new.img"
 	fi
@@ -242,21 +189,11 @@ find_boot
 
 dump_boot
 
-determine_ramdisk_format
-
-dump_ramdisk
-
-dump_embedded_ramdisk
-
-patch_ramdisk
-
-build_embedded_ramdisk
-
-build_ramdisk
-
 build_boot
 
 samsung_tag
+
+verify_size
 
 write_boot
 

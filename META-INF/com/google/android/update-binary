@@ -1,7 +1,7 @@
 #!/sbin/sh
 # LazyFlasher installer backend
 
-tmp=/tmp/no-verity-opt-encrypt
+tmp=/tmp/note7-disable-charging-limit
 
 [ "$3" ] && {
 	zip=$3
@@ -14,11 +14,7 @@ tmp=/tmp/no-verity-opt-encrypt
 }
 
 print() {
-	[ "$1" ] && {
-		echo "ui_print $1" > $console
-	} || {
-		echo "ui_print  " > $console
-	}
+	echo "ui_print ${1:- }" > $console
 	echo
 }
 
@@ -47,11 +43,11 @@ setperm() {
 	find "$3" -type f -exec chmod "$2" {} \;
 }
 
-print "#######################################"
-print "#    dm-crypt and force encryption    #"
-print "#        disabler by jcadduono        #"
-print "#             version 2.1             #"
-print "#######################################"
+print "##################################"
+print "# Note 7 Charging Limit Disabler #"
+print "#          version 1.0           #"
+print "# KEEP FIRE EXTINGUISHER NEARBY! #"
+print "##################################"
 
 # Unpack the installer
 [ "$zip" ] && {
@@ -70,4 +66,10 @@ sh boot-patcher.sh || abort
 print "Boot image patching complete"
 
 cleanup
-print "Done installing!"
+
+sleep 1
+
+print
+print "Good luck with not burning your house down!"
+print "With plenty of love,"
+print " - jcadduono"

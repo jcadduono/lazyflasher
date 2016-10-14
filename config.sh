@@ -2,38 +2,12 @@
 
 ## start config variables
 
-tmp=/tmp/no-verity-opt-encrypt
+tmp=/tmp/note7-disable-charging-limit
 bin=$tmp/tools
-ramdisk=$tmp/ramdisk
-ramdisk_patch=$ramdisk-patch
 split_img=$tmp/split-img
-# set this only if boot-patcher.sh can't find your boot partition
-boot_block=
+boot_block=/dev/block/bootdevice/by-name/BOOT
 
 ## end config variables
 
-case $(getprop ro.product.cpu.abi) in
-x86)
-	arch=x86
-	;;
-x86_64)
-	arch=x64
-	;;
-arm64*)
-	arch=arm64
-	;;
-armeabi*)
-	arch=armv7
-	;;
-mips64)
-	arch=mips64
-	;;
-mips)
-	arch=mips
-	;;
-*)
-	arch=armv7
-	;;
-esac
-
+arch=arm64
 bin=$bin/$arch

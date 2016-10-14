@@ -1,6 +1,6 @@
-VERSION := 2.1
+VERSION := 1.0
 
-ZIP := no-verity-opt-encrypt-$(VERSION).zip
+ZIP := note7-disable-charging-limit-$(VERSION).zip
 
 EXCLUDE := Makefile README.md *.git*
 
