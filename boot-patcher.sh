@@ -162,7 +162,7 @@ build_boot() {
 			break
 		fi
 	done
-	[ "$kernel" ] || kernel="$(ls ./*-zImage)"
+	[ "$kernel" ] || kernel="$(ls ./*-kernel)"
 	if [ -s "$tmp/ramdisk-new" ]; then
 		rd="$tmp/ramdisk-new"
 		print "Found replacement ramdisk image!"
