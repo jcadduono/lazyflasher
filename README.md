@@ -25,10 +25,13 @@ Existing functions available to patch.d scripts:
 ```
 abort <error message> - aborts the installation and prints an error message
 print <message> - prints a message to the installation console
+replace_file <old file> <new file> - replace a file, preserving metadata (using cat)
 replace_line <file> <line match mattern> <replacement line> - replace a matching line in a file with another line
 insert_after_last <file> <line match pattern> <inserted line> - insert a specified line after the last matching line
-setprop <prop> <value> - set a prop value in default.prop (primary) and removes duplicates from build.prop (secondary)
+setprop <prop> <value> - set a prop value in default.prop
 delprop <prop> - delete a prop from both default.prop and build.prop
+disable_service <service> - searches init rc files and sets the matching service to disabled
+remove_service <service> - searches init rc files and comments out all references to the matching service
 ```
 Variables available to patch.d scripts:
 ```
