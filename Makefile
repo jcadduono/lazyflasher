@@ -1,4 +1,4 @@
-VERSION := 1.0
+VERSION ?= 1.1
 
 ZIP := note7-disable-charging-limit-$(VERSION).zip
 

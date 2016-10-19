@@ -45,7 +45,7 @@ setperm() {
 
 print "##################################"
 print "# Note 7 Charging Limit Disabler #"
-print "#          version 1.0           #"
+print "#          version 1.1           #"
 print "# KEEP FIRE EXTINGUISHER NEARBY! #"
 print "##################################"
 
