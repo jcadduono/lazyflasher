@@ -53,6 +53,12 @@ insert_after_last() {
 	}
 }
 
+# setcmdline <key> <value>
+setcmdline() {
+	grep -q "\b$1=" "$cmdline" && sed -i "s|\b$1=.*\b|$1=$2|g" "$cmdline" && return
+	sed -i "1 s/$/ $1=$2/" "$cmdline"
+}
+
 # setprop <prop> <value>
 setprop() {
 	$found_prop || return
