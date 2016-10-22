@@ -3,22 +3,22 @@
 
 tmp=/tmp/samsung-antiroot-removal
 
-[ "$3" ] && {
+if [ "$3" ]; then
 	zip=$3
 	console=/proc/$$/fd/$2
 	# write the location of the console buffer to /tmp/console for other scripts to use
 	echo "$console" > /tmp/console
-} || {
+else
 	console=$(cat /tmp/console)
 	[ "$console" ] || console=/proc/$$/fd/1
-}
+fi
 
 print() {
-	[ "$1" ] && {
-		echo "ui_print $1" > $console
-	} || {
-		echo "ui_print  " > $console
-	}
+	if [ "$1" ]; then
+		echo "ui_print $1" > "$console"
+	else
+		echo "ui_print  " > "$console"
+	fi
 	echo
 }
 
@@ -40,7 +40,7 @@ cleanup() {
 extract() {
 	rm -rf "$2"
 	mkdir -p "$2"
-	unzip -o "$1" -d "$2"
+	unzip -o "$1" -d "$2" || abort "Failed to extract zip to $2!"
 }
 
 mount() {
