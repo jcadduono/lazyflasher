@@ -56,39 +56,38 @@ find_boot() {
 	# if we already have boot block set then verify and use it
 	[ "$boot_block" ] && verify_block && return
 	# otherwise, time to go hunting!
-	[ -f /etc/recovery.fstab ] && {
+	if [ -f /etc/recovery.fstab ]; then
 		# recovery fstab v1
 		boot_block=$(awk '$1 == "/boot" {print $3}' /etc/recovery.fstab)
 		[ "$boot_block" ] && verify_block && return
 		# recovery fstab v2
 		boot_block=$(awk '$2 == "/boot" {print $1}' /etc/recovery.fstab)
 		[ "$boot_block" ] && verify_block && return
-		return 1
-	} && return
-	[ -f /fstab.qcom ] && {
-		# qcom fstab
-		boot_block=$(awk '$2 == "/boot" {print $1}' /fstab.qcom)
+	fi
+	for fstab in /fstab.*; do
+		[ -f "$fstab" ] || continue
+		# device fstab v2
+		boot_block=$(awk '$2 == "/boot" {print $1}' "$fstab")
 		[ "$boot_block" ] && verify_block && return
-		return 1
-	} && return
-	[ -f /proc/emmc ] && {
+		# device fstab v1
+		boot_block=$(awk '$1 == "/boot" {print $3}' "$fstab")
+		[ "$boot_block" ] && verify_block && return
+	done
+	if [ -f /proc/emmc ]; then
 		# emmc layout
 		boot_block=$(awk '$4 == "\"boot\"" {print $1}' /proc/emmc)
 		[ "$boot_block" ] && boot_block=/dev/block/$(echo "$boot_block" | cut -f1 -d:) && verify_block && return
-		return 1
-	} && return
-	[ -f /proc/mtd ] && {
+	fi
+	if [ -f /proc/mtd ]; then
 		# mtd layout
 		boot_block=$(awk '$4 == "\"boot\"" {print $1}' /proc/mtd)
 		[ "$boot_block" ] && boot_block=/dev/block/$(echo "$boot_block" | cut -f1 -d:) && verify_block && return
-		return 1
-	} && return
-	[ -f /proc/dumchar_info ] && {
+	fi
+	if [ -f /proc/dumchar_info ]; then
 		# mtk layout
 		boot_block=$(awk '$1 == "/boot" {print $5}' /proc/dumchar_info)
 		[ "$boot_block" ] && verify_block && return
-		return 1
-	} && return
+	fi
 	abort "Unable to find boot block location"
 }
 
