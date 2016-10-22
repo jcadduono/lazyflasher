@@ -3,22 +3,22 @@
 
 tmp=/tmp/kernel-flasher-gracelte
 
-[ "$3" ] && {
+if [ "$3" ]; then
 	zip=$3
 	console=/proc/$$/fd/$2
 	# write the location of the console buffer to /tmp/console for other scripts to use
 	echo "$console" > /tmp/console
-} || {
+else
 	console=$(cat /tmp/console)
 	[ "$console" ] || console=/proc/$$/fd/1
-}
+fi
 
 print() {
-	[ "$1" ] && {
-		echo "ui_print $1" > $console
-	} || {
-		echo "ui_print  " > $console
-	}
+	if [ "$1" ]; then
+		echo "ui_print $1" > "$console"
+	else
+		echo "ui_print  " > "$console"
+	fi
 	echo
 }
 
@@ -40,7 +40,7 @@ cleanup() {
 extract() {
 	rm -rf "$2"
 	mkdir -p "$2"
-	unzip -o "$1" -d "$2"
+	unzip -o "$1" -d "$2" || abort "Failed to extract zip to $2!"
 }
 
 setperm() {
@@ -76,7 +76,7 @@ cd "$tmp"
 . config.sh
 
 [ "$device_names" ] && {
-	if [ ! -x "/sbin/getprop" ]; then
+	if ! command -v getprop; then
 		print "Warning: getprop not found! Skipping device check!"
 		return
 	fi
@@ -86,7 +86,10 @@ cd "$tmp"
 	ro_product_model=$(getprop ro.product.model)
 	ro_build_product=$(getprop ro.build.product)
 	for i in $device_names; do
-		[ "$ro_product_device" = "$i" -o "$ro_product_model" = "$i" -o "$ro_build_product" = "$i" ] && match=1
+		[ "$ro_product_device" = "$i" ] ||
+		[ "$ro_product_model" = "$i" ] ||
+		[ "$ro_build_product" = "$i" ] &&
+			match=1
 	done
 	[ $match != 1 ] && abort "Unsupported device"
 }

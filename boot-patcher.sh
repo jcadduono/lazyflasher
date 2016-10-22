@@ -14,11 +14,11 @@ rm -rf "$ramdisk" "$split_img"
 mkdir "$ramdisk" "$split_img"
 
 print() {
-	[ "$1" ] && {
-		echo "ui_print - $1" > $console
-	} || {
-		echo "ui_print  " > $console
-	}
+	if [ "$1" ]; then
+		echo "ui_print - $1" > "$console"
+	else
+		echo "ui_print  " > "$console"
+	fi
 	echo
 }
 
