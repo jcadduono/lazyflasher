@@ -9,6 +9,9 @@ tmp=/tmp/kernel-flasher-gracelte
 device_names=
 # leave boot_block empty for automatic (searches recovery.fstab and other locations)
 boot_block=
+# leave ramdisk_compression empty to keep the current ramdisk compression format
+# only gzip, lz4, lzo, and bzip2 are supported
+ramdisk_compression=
 
 bin=$tmp/tools
 ramdisk=$tmp/ramdisk
