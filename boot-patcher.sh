@@ -110,18 +110,30 @@ dump_boot() {
 determine_ramdisk_format() {
 	magicbytes=$(hexdump -vn2 -e '2/1 "%x"' "$split_img/boot.img-ramdisk")
 	case "$magicbytes" in
-		425a) rdformat=bzip2; decompress="$bin/bzip2 -dc"; compress="$bin/bzip2 -9c" ;;
-		1f8b|1f9e) rdformat=gzip; decompress="gzip -dc"; compress="gzip -9c" ;;
-		0221) rdformat=lz4; decompress="$bin/lz4 -d"; compress="$bin/lz4 -9" ;;
-		894c) rdformat=lzo; decompress="lzop -dc"; abort "lzop -9c" ;;
-		5d00) rdformat=lzma; decompress="xz -dc"; compress="xz --format=lzma --lzma1=dict=16MiB -9";
-			abort "LZMA ramdisks are currently not supported" ;;
-		fd37) rdformat=xz; decompress="xz -dc"; compress="xz --check=crc32 --lzma2=dict=16MiB -9";
-			abort "XZ ramdisks are currently not supported" ;;
+		425a) rdformat=bzip2; decompress="$bin/bzip2 -dc" ;;
+		1f8b|1f9e) rdformat=gzip; decompress="gzip -dc" ;;
+		0221) rdformat=lz4; decompress="$bin/lz4 -d" ;;
+		894c) rdformat=lzo; decompress="lzop -dc" ;;
+		5d00) rdformat=lzma; decompress="lzma -dc" ;;
+		fd37) rdformat=xz; decompress="xz -dc" ;;
 		*) abort "Unknown ramdisk compression format ($magicbytes)" ;;
 	esac
 	print "Detected ramdisk compression format: $rdformat"
 	command -v $decompress || abort "Unable to find archiver for $rdformat"
+
+	[ "$ramdisk_compression" ] && rdformat=$ramdisk_compression
+	case "$rdformat" in
+		bzip2) compress="$bin/bzip2 -9c" ;;
+		gzip) compress="gzip -9c" ;;
+		lz4) compress="$bin/lz4 -9" ;;
+		lzo) compress="lzop -9c" ;;
+		lzma) compress="$bin/xz --format=lzma --lzma1=dict=16MiB -9";
+			abort "LZMA ramdisk compression is currently unsupported" ;;
+		xz) compress="$bin/xz --check=crc32 --lzma2=dict=16MiB -9";
+			abort "XZ ramdisk compression is currently unsupported" ;;
+		*) abort "Unknown ramdisk compression format ($rdformat)" ;;
+	esac
+	command -v $compress || abort "Unable to find archiver for $rdformat"
 }
 
 # extract the old ramdisk contents
@@ -146,7 +158,7 @@ patch_ramdisk() {
 
 # build the new ramdisk
 build_ramdisk() {
-	print "Building new ramdisk..."
+	print "Building new ramdisk ($rdformat)..."
 	cd "$ramdisk"
 	find | cpio -o -H newc | $compress > "$tmp/ramdisk-new"
 }
