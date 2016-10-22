@@ -2,7 +2,7 @@
 
 ## To use:
 
-Place a `zImage` and/or `dtb.img` in root directory and it will automatically be flashed by the zip.
+Place a `zImage`/`Image.gz` (or any other variation of a kernel image) along with an optional `dtb.img` in the root directory and it will automatically be flashed by the zip.
 
 To create a zip file, use `make`.
 
@@ -28,6 +28,8 @@ print <message> - prints a message to the installation console
 replace_file <old file> <new file> - replace a file, preserving metadata (using cat)
 replace_line <file> <line match mattern> <replacement line> - replace a matching line in a file with another line
 insert_after_last <file> <line match pattern> <inserted line> - insert a specified line after the last matching line
+setperm <directory permissions> <file permissions> <directory> - recursively sets permissions of directories
+setcmdline <key> <value> - set a key's value on the boot image's initial command line
 setprop <prop> <value> - set a prop value in default.prop
 delprop <prop> - delete a prop from both default.prop and build.prop
 disable_service <service> - searches init rc files and sets the matching service to disabled
