@@ -174,32 +174,32 @@ build_boot() {
 			break
 		fi
 	done
-	[ "$kernel" ] || kernel="$(ls ./*-kernel)"
+	[ "$kernel" ] || kernel="boot.img-kernel"
 	if [ -s "$tmp/ramdisk-new" ]; then
 		rd="$tmp/ramdisk-new"
 		print "Found replacement ramdisk image!"
 	else
-		rd="$(ls ./*-ramdisk)"
+		rd="$(ls boot.img-ramdisk)"
 	fi
 	if [ -s "$tmp/dtb.img" ]; then
 		dtb="$tmp/dtb.img"
 		print "Found replacement device tree image!"
 	else
-		dtb="$(ls ./*-dt)"
+		dtb="boot.img-dt"
 	fi
 	"$bin/mkbootimg" \
 		--kernel "$kernel" \
 		--ramdisk "$rd" \
 		--dt "$dtb" \
-		--second "$(ls ./*-second)" \
-		--cmdline "$(cat ./*-cmdline)" \
-		--board "$(cat ./*-board)" \
-		--base "$(cat ./*-base)" \
-		--pagesize "$(cat ./*-pagesize)" \
-		--kernel_offset "$(cat ./*-kernel_offset)" \
-		--ramdisk_offset "$(cat ./*-ramdisk_offset)" \
-		--second_offset "$(cat ./*-second_offset)" \
-		--tags_offset "$(cat ./*-tags_offset)" \
+		--second "boot.img-second" \
+		--cmdline "$(cat boot.img-cmdline)" \
+		--board "$(cat boot.img-board)" \
+		--base "$(cat boot.img-base)" \
+		--pagesize "$(cat boot.img-pagesize)" \
+		--kernel_offset "$(cat boot.img-kernel_offset)" \
+		--ramdisk_offset "$(cat boot.img-ramdisk_offset)" \
+		--second_offset "$(cat boot.img-second_offset)" \
+		--tags_offset "$(cat boot.img-tags_offset)" \
 		-o "$tmp/boot-new.img" || {
 			abort "Repacking boot image failed"
 		}
