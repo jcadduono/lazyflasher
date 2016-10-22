@@ -14,11 +14,11 @@ rm -rf "$ramdisk" "$split_img"
 mkdir "$ramdisk" "$split_img"
 
 print() {
-	[ "$1" ] && {
-		echo "ui_print - $1" > $console
-	} || {
-		echo "ui_print  " > $console
-	}
+	if [ "$1" ]; then
+		echo "ui_print - $1" > "$console"
+	else
+		echo "ui_print  " > "$console"
+	fi
 	echo
 }
 
@@ -181,7 +181,7 @@ build_embedded_ramdisk() {
 build_ramdisk() {
 	print "Building new ramdisk ($rdformat)..."
 	cd "$ramdisk"
-	find | cpio -o -H newc | $compress > $tmp/ramdisk-new
+	find | cpio -o -H newc | $compress > "$tmp/ramdisk-new"
 }
 
 # build the new boot image
@@ -189,20 +189,20 @@ build_boot() {
 	cd "$split_img"
 	kernel=
 	for image in zImage zImage-dtb Image Image-dtb Image.gz Image.gz-dtb; do
-		if [ -s $tmp/$image ]; then
+		if [ -s "$tmp/$image" ]; then
 			kernel="$tmp/$image"
 			print "Found replacement kernel $image!"
 			break
 		fi
 	done
 	[ "$kernel" ] || kernel="$(ls ./*-kernel)"
-	if [ -s $tmp/ramdisk-new ]; then
+	if [ -s "$tmp/ramdisk-new" ]; then
 		rd="$tmp/ramdisk-new"
 		print "Found replacement ramdisk image!"
 	else
 		rd="$(ls ./*-ramdisk)"
 	fi
-	if [ -s $tmp/dtb.img ]; then
+	if [ -s "$tmp/dtb.img" ]; then
 		dtb="$tmp/dtb.img"
 		print "Found replacement device tree image!"
 	else
@@ -221,7 +221,7 @@ build_boot() {
 		--ramdisk_offset "$(cat ./*-ramdisk_offset)" \
 		--second_offset "$(cat ./*-second_offset)" \
 		--tags_offset "$(cat ./*-tags_offset)" \
-		-o $tmp/boot-new.img || {
+		-o "$tmp/boot-new.img" || {
 			abort "Repacking boot image failed"
 		}
 }
