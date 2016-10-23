@@ -94,13 +94,14 @@ find_boot() {
 # dump boot and unpack the android boot image
 dump_boot() {
 	print "Dumping & unpacking original boot image..."
+	cd "$tmp"
 	if $use_dd; then
-		dd if="$boot_block" of="$tmp/boot.img"
+		dd if="$boot_block" of=boot.img
 	else
-		dump_image "$boot_block" "$tmp/boot.img"
+		dump_image "$boot_block" boot.img
 	fi
 	[ $? = 0 ] || abort "Unable to read boot partition"
-	"$bin/unpackbootimg" -i "$tmp/boot.img" -o "$split_img" || {
+	"$bin/unpackbootimg" -i boot.img -o "$split_img" || {
 		abort "Unpacking boot image failed"
 	}
 }
@@ -149,9 +150,8 @@ patch_ramdisk() {
 	find patch.d/ -type f | sort > patchfiles
 	while read -r patchfile; do
 		print "Executing: $(basename "$patchfile")"
-		env="$tmp/patch.d-env" sh "$patchfile" || {
+		env="$tmp/patch.d-env" sh "$patchfile" ||
 			abort "Script failed: $(basename "$patchfile")"
-		}
 	done < patchfiles
 }
 
@@ -159,6 +159,8 @@ patch_ramdisk() {
 build_ramdisk() {
 	print "Building new ramdisk ($rdformat)..."
 	cd "$ramdisk"
+	echo "Listing ramdisk contents by size:"
+	find -type f -exec du -a "{}" + | sort -n | awk '{ total += $1; print } END { print "Total size: "total }'
 	find | cpio -o -H newc | $compress > "$tmp/ramdisk-new"
 }
 
@@ -178,7 +180,7 @@ build_boot() {
 		rd="$tmp/ramdisk-new"
 		print "Found replacement ramdisk image!"
 	else
-		rd="$(ls boot.img-ramdisk)"
+		rd="boot.img-ramdisk"
 	fi
 	if [ -s "$tmp/dtb.img" ]; then
 		dtb="$tmp/dtb.img"
@@ -211,6 +213,14 @@ samsung_tag() {
 	fi
 }
 
+# backup old boot image
+backup_boot() {
+	print "Backing up original boot image to $boot_backup..."
+	cd "$tmp"
+	mkdir -p "$(dirname "$boot_backup")"
+	cp -f boot.img "$boot_backup"
+}
+
 # verify that the boot image exists and can fit the partition
 verify_size() {
 	print "Verifying boot image size..."
@@ -229,10 +239,11 @@ verify_size() {
 # write the new boot image to boot block
 write_boot() {
 	print "Writing new boot image to memory..."
+	cd "$tmp"
 	if $use_dd; then
-		dd if="$tmp/boot-new.img" of="$boot_block"
+		dd if=boot-new.img of="$boot_block"
 	else
-		flash_image "$boot_block" "$tmp/boot-new.img"
+		flash_image "$boot_block" boot-new.img
 	fi
 	[ $? = 0 ] || abort "Failed to write boot image! You may need to restore your boot partition"
 }
@@ -258,6 +269,8 @@ build_boot
 samsung_tag
 
 verify_size
+
+[ "$boot_backup" ] && backup_boot
 
 write_boot
 
