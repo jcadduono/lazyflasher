@@ -62,7 +62,7 @@ umount() {
 
 print "#######################################"
 print "#           kernel flasher            #"
-print "#      by jcadduono, version 3.0      #"
+print "#      by jcadduono, version 3.1      #"
 print "#   add your own intro message here!  #"
 print "#######################################"
 
