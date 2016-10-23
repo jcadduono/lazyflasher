@@ -95,6 +95,7 @@ cd "$tmp"
 }
 
 mount /system
+# mount /data
 
 setperm 0755 0755 "$bin"
 
