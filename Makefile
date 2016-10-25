@@ -1,6 +1,6 @@
-NAME := kernel-flasher-gracelte
+NAME ?= kernel-flasher-gracelte
 
-VERSION := 1.0
+VERSION ?= 3.2
 
 DATE := $(shell date +'%Y%m%d-%H%M')
 
