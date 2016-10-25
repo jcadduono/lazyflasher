@@ -1,6 +1,6 @@
-NAME := kernel-flasher-herolte
+NAME ?= kernel-flasher-herolte
 
-VERSION := 1.0
+VERSION ?= 3.2
 
 DATE := $(shell date +'%Y%m%d-%H%M')
 
