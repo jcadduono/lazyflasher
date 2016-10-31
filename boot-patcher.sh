@@ -11,7 +11,7 @@ cd "$tmp"
 
 chmod -R 755 "$bin"
 rm -rf "$ramdisk" "$split_img"
-mkdir "$ramdisk" "$split_img"
+mkdir "$ramdisk"
 
 print() {
 	if [ "$1" ]; then
@@ -101,9 +101,8 @@ dump_boot() {
 		dump_image "$boot_block" boot.img
 	fi
 	[ $? = 0 ] || abort "Unable to read boot partition"
-	"$bin/unpackbootimg" -i boot.img -o "$split_img" || {
+	"$bin/bootimg" xvf boot.img "$split_img" ||
 		abort "Unpacking boot image failed"
-	}
 }
 
 # determine the format the ramdisk was compressed in
@@ -166,44 +165,32 @@ build_ramdisk() {
 
 # build the new boot image
 build_boot() {
-	cd "$split_img"
+	cd "$tmp"
+	print "Building new boot image..."
 	kernel=
-	for image in zImage zImage-dtb Image Image-dtb Image.gz Image.gz-dtb; do
-		if [ -s "$tmp/$image" ]; then
-			kernel="$tmp/$image"
+	rd=
+	dtb=
+	for image in zImage zImage-dtb Image Image-dtb Image.gz Image.gz-dtb Image.lz4 Image.lz4-dtb; do
+		if [ -s $image ]; then
+			kernel=$image
 			print "Found replacement kernel $image!"
 			break
 		fi
 	done
-	[ "$kernel" ] || kernel="boot.img-kernel"
-	if [ -s "$tmp/ramdisk-new" ]; then
-		rd="$tmp/ramdisk-new"
+	if [ -s ramdisk-new ]; then
+		rd=ramdisk-new
 		print "Found replacement ramdisk image!"
-	else
-		rd="boot.img-ramdisk"
 	fi
-	if [ -s "$tmp/dtb.img" ]; then
-		dtb="$tmp/dtb.img"
+	if [ -s dtb.img ]; then
+		dtb=dtb.img
 		print "Found replacement device tree image!"
-	else
-		dtb="boot.img-dt"
 	fi
-	"$bin/mkbootimg" \
-		--kernel "$kernel" \
-		--ramdisk "$rd" \
-		--dt "$dtb" \
-		--second "boot.img-second" \
-		--cmdline "$(cat boot.img-cmdline)" \
-		--board "$(cat boot.img-board)" \
-		--base "$(cat boot.img-base)" \
-		--pagesize "$(cat boot.img-pagesize)" \
-		--kernel_offset "$(cat boot.img-kernel_offset)" \
-		--ramdisk_offset "$(cat boot.img-ramdisk_offset)" \
-		--second_offset "$(cat boot.img-second_offset)" \
-		--tags_offset "$(cat boot.img-tags_offset)" \
-		-o "$tmp/boot-new.img" || {
-			abort "Repacking boot image failed"
-		}
+	"$bin/bootimg" cvf boot-new.img "$split_img" \
+		${kernel:+--kernel "$kernel"} \
+		${rd:+--ramdisk "$rd"} \
+		${dtb:+--dt "$dtb"} \
+		--hash ||
+		abort "Repacking boot image failed"
 }
 
 # append Samsung enforcing tag to prevent warning at boot
@@ -215,6 +202,7 @@ samsung_tag() {
 
 # backup old boot image
 backup_boot() {
+	[ "$boot_backup" ] || return
 	print "Backing up original boot image to $boot_backup..."
 	cd "$tmp"
 	mkdir -p "$(dirname "$boot_backup")"
@@ -270,7 +258,7 @@ samsung_tag
 
 verify_size
 
-[ "$boot_backup" ] && backup_boot
+backup_boot
 
 write_boot
 
