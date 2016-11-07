@@ -1,6 +1,6 @@
 NAME ?= samsung-antiroot-removal
 
-VERSION ?= 3.2
+VERSION ?= 4.1
 
 DATE := $(shell date +'%Y%m%d-%H%M')
 
