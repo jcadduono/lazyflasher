@@ -1,24 +1,24 @@
 #!/sbin/sh
-# Kernel Flasher installer backend
+# LazyFlasher installer backend
 
 tmp=/tmp/adb-boot-insecure
 
-[ "$3" ] && {
+if [ "$3" ]; then
 	zip=$3
 	console=/proc/$$/fd/$2
 	# write the location of the console buffer to /tmp/console for other scripts to use
 	echo "$console" > /tmp/console
-} || {
+else
 	console=$(cat /tmp/console)
 	[ "$console" ] || console=/proc/$$/fd/1
-}
+fi
 
 print() {
-	[ "$1" ] && {
-		echo "ui_print $1" > $console
-	} || {
-		echo "ui_print  " > $console
-	}
+	if [ "$1" ]; then
+		echo "ui_print $1" > "$console"
+	else
+		echo "ui_print  " > "$console"
+	fi
 	echo
 }
 
@@ -39,7 +39,7 @@ cleanup() {
 extract() {
 	rm -rf "$2"
 	mkdir -p "$2"
-	unzip -o "$1" -d "$2"
+	unzip -o "$1" -d "$2" || abort "Failed to extract zip to $2!"
 }
 
 setperm() {
@@ -48,8 +48,9 @@ setperm() {
 }
 
 print "#######################################"
-print "#      adb boot insecure patcher      #"
-print "#      by jcadduono, version 2.0      #"
+print "#     adb debuggable and insecure     #"
+print "#        patcher by jcadduono         #"
+print "#             version 4.1             #"
 print "#######################################"
 
 # Unpack the installer

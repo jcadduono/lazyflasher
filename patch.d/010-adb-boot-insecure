@@ -7,8 +7,9 @@ $found_prop || abort "Failed to find default.prop!"
 setprop ro.debuggable 1
 setprop ro.secure 0
 setprop ro.adb.secure 0
+setprop service.adb.root 1
+setprop persist.service.adb.enable 1
 setprop persist.sys.usb.config adb
 setprop sys.usb.config adb
-setprop service.adb.root 1
 
 exit 0

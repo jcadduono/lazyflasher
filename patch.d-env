@@ -1,6 +1,7 @@
 #!/bin/sh
 
 tmp=/tmp/adb-boot-insecure
+default_prop=$ramdisk/default.prop
 
 console=$(cat /tmp/console)
 [ "$console" ] || console=/proc/$$/fd/1
@@ -8,16 +9,14 @@ console=$(cat /tmp/console)
 cd "$tmp"
 . config.sh
 
-default_prop=$ramdisk/default.prop
-
 [ -f "$default_prop" ] && found_prop=true
 
 print() {
-	[ "$1" ] && {
-		echo "ui_print -- $1" > $console
-	} || {
-		echo "ui_print  " > $console
-	}
+	if [ "$1" ]; then
+		echo "ui_print -- $1" > "$console"
+	else
+		echo "ui_print  " > "$console"
+	fi
 	echo
 }
 
@@ -26,26 +25,13 @@ abort() {
 	exit 1
 }
 
-# replace_line <file> <line match pattern> <replacement line>
-replace_line() {
-	sed -i "s/\s*$2\s*$/$3/" "$1"
-}
-
-# insert_after_last <file> <line match pattern> <inserted line>
-insert_after_last() {
-	grep -q "^$3$" "$1" || {
-		line=$(($(grep -n "^\s*$2\s*$" "$1" | tail -1 | cut -d: -f1) + 1))
-		sed -i "${line}i$3" "$1"
-	}
-}
-
 # setprop <prop> <value>
 setprop() {
 	$found_prop || return
-	if grep -q "${1}=" "$default_prop"; then
-		sed -i "s/${1}=.*/${1}=${2}/g" "$default_prop"
+	if grep -q "^[[:space:]]*$1[[:space:]]*=" "$default_prop"; then
+		sed -i "s/^[[:space:]]*$1[[:space:]]*=.*$/$1=$2/g" "$default_prop"
 	else
-		echo "${1}=${2}" >> "$default_prop"
+		echo "$1=$2" >> "$default_prop"
 	fi
 }
 

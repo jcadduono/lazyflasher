@@ -11,14 +11,14 @@ cd "$tmp"
 
 chmod -R 755 "$bin"
 rm -rf "$ramdisk" "$split_img"
-mkdir "$ramdisk" "$split_img"
+mkdir "$ramdisk"
 
 print() {
-	[ "$1" ] && {
-		echo "ui_print - $1" > $console
-	} || {
-		echo "ui_print  " > $console
-	}
+	if [ "$1" ]; then
+		echo "ui_print - $1" > "$console"
+	else
+		echo "ui_print  " > "$console"
+	fi
 	echo
 }
 
@@ -56,72 +56,83 @@ find_boot() {
 	# if we already have boot block set then verify and use it
 	[ "$boot_block" ] && verify_block && return
 	# otherwise, time to go hunting!
-	[ -f /etc/recovery.fstab ] && {
+	if [ -f /etc/recovery.fstab ]; then
 		# recovery fstab v1
 		boot_block=$(awk '$1 == "/boot" {print $3}' /etc/recovery.fstab)
 		[ "$boot_block" ] && verify_block && return
 		# recovery fstab v2
 		boot_block=$(awk '$2 == "/boot" {print $1}' /etc/recovery.fstab)
 		[ "$boot_block" ] && verify_block && return
-		return 1
-	} && return
-	[ -f /fstab.qcom ] && {
-		# qcom fstab
-		boot_block=$(awk '$2 == "/boot" {print $1}' /fstab.qcom)
+	fi
+	for fstab in /fstab.*; do
+		[ -f "$fstab" ] || continue
+		# device fstab v2
+		boot_block=$(awk '$2 == "/boot" {print $1}' "$fstab")
 		[ "$boot_block" ] && verify_block && return
-		return 1
-	} && return
-	[ -f /proc/emmc ] && {
+		# device fstab v1
+		boot_block=$(awk '$1 == "/boot" {print $3}' "$fstab")
+		[ "$boot_block" ] && verify_block && return
+	done
+	if [ -f /proc/emmc ]; then
 		# emmc layout
 		boot_block=$(awk '$4 == "\"boot\"" {print $1}' /proc/emmc)
 		[ "$boot_block" ] && boot_block=/dev/block/$(echo "$boot_block" | cut -f1 -d:) && verify_block && return
-		return 1
-	} && return
-	[ -f /proc/mtd ] && {
+	fi
+	if [ -f /proc/mtd ]; then
 		# mtd layout
 		boot_block=$(awk '$4 == "\"boot\"" {print $1}' /proc/mtd)
 		[ "$boot_block" ] && boot_block=/dev/block/$(echo "$boot_block" | cut -f1 -d:) && verify_block && return
-		return 1
-	} && return
-	[ -f /proc/dumchar_info ] && {
+	fi
+	if [ -f /proc/dumchar_info ]; then
 		# mtk layout
 		boot_block=$(awk '$1 == "/boot" {print $5}' /proc/dumchar_info)
 		[ "$boot_block" ] && verify_block && return
-		return 1
-	} && return
+	fi
 	abort "Unable to find boot block location"
 }
 
 # dump boot and unpack the android boot image
 dump_boot() {
 	print "Dumping & unpacking original boot image..."
+	cd "$tmp"
 	if $use_dd; then
-		dd if="$boot_block" of="$tmp/boot.img"
+		dd if="$boot_block" of=boot.img
 	else
-		dump_image "$boot_block" "$tmp/boot.img"
+		dump_image "$boot_block" boot.img
 	fi
 	[ $? = 0 ] || abort "Unable to read boot partition"
-	"$bin/unpackbootimg" -i "$tmp/boot.img" -o "$split_img" || {
+	"$bin/bootimg" xvf boot.img "$split_img" ||
 		abort "Unpacking boot image failed"
-	}
 }
 
 # determine the format the ramdisk was compressed in
 determine_ramdisk_format() {
 	magicbytes=$(hexdump -vn2 -e '2/1 "%x"' "$split_img/boot.img-ramdisk")
 	case "$magicbytes" in
-		425a) rdformat=bzip2; decompress="$bin/bzip2 -dc"; compress="$bin/bzip2 -9c" ;;
-		1f8b|1f9e) rdformat=gzip; decompress="gzip -dc"; compress="gzip -9c" ;;
-		0221) rdformat=lz4; decompress="$bin/lz4 -d"; compress="$bin/lz4 -9" ;;
-		894c) rdformat=lzo; decompress="lzop -dc"; abort "lzop -9c" ;;
-		5d00) rdformat=lzma; decompress="xz -dc"; compress="xz --format=lzma --lzma1=dict=16MiB -9";
-			abort "LZMA ramdisks are currently not supported" ;;
-		fd37) rdformat=xz; decompress="xz -dc"; compress="xz --check=crc32 --lzma2=dict=16MiB -9";
-			abort "XZ ramdisks are currently not supported" ;;
+		425a) rdformat=bzip2; decompress="$bin/bzip2 -dc" ;;
+		1f8b|1f9e) rdformat=gzip; decompress="gzip -dc" ;;
+		0221) rdformat=lz4; decompress="$bin/lz4 -d" ;;
+		894c) rdformat=lzo; decompress="lzop -dc" ;;
+		5d00) rdformat=lzma; decompress="lzma -dc" ;;
+		fd37) rdformat=xz; decompress="xz -dc" ;;
 		*) abort "Unknown ramdisk compression format ($magicbytes)" ;;
 	esac
 	print "Detected ramdisk compression format: $rdformat"
 	command -v $decompress || abort "Unable to find archiver for $rdformat"
+
+	[ "$ramdisk_compression" ] && rdformat=$ramdisk_compression
+	case "$rdformat" in
+		bzip2) compress="$bin/bzip2 -9c" ;;
+		gzip) compress="gzip -9c" ;;
+		lz4) compress="$bin/lz4 -9" ;;
+		lzo) compress="lzop -9c" ;;
+		lzma) compress="$bin/xz --format=lzma --lzma1=dict=16MiB -9";
+			abort "LZMA ramdisk compression is currently unsupported" ;;
+		xz) compress="$bin/xz --check=crc32 --lzma2=dict=16MiB -9";
+			abort "XZ ramdisk compression is currently unsupported" ;;
+		*) abort "Unknown ramdisk compression format ($rdformat)" ;;
+	esac
+	command -v $compress || abort "Unable to find archiver for $rdformat"
 }
 
 # extract the old ramdisk contents
@@ -133,85 +144,74 @@ dump_ramdisk() {
 
 # if the actual boot ramdisk exists inside a parent one, use that instead
 dump_embedded_ramdisk() {
-	if [ -f "$ramdisk/sbin/ramdisk.cpio" ]; then
-		print "Found embedded boot ramdisk!"
-		mv "$ramdisk" "$ramdisk-root"
-		mkdir "$ramdisk"
-		cd "$ramdisk"
-		cpio -i < "$ramdisk-root/sbin/ramdisk.cpio" || {
-			abort "Failed to unpack embedded boot ramdisk"
-		}
-	fi
+	[ -f "$ramdisk/sbin/ramdisk.cpio" ] || return
+	print "Found embedded boot ramdisk!"
+	mv "$ramdisk" "$ramdisk-root"
+	mkdir "$ramdisk"
+	cd "$ramdisk"
+	cpio -i < "$ramdisk-root/sbin/ramdisk.cpio" ||
+		abort "Failed to unpack embedded boot ramdisk"
 }
 
 # execute all scripts in patch.d
 patch_ramdisk() {
 	print "Running ramdisk patching scripts..."
-	find "$tmp/patch.d/" -type f | sort > "$tmp/patchfiles"
+	cd "$tmp"
+	find patch.d/ -type f | sort > patchfiles
 	while read -r patchfile; do
 		print "Executing: $(basename "$patchfile")"
-		env="$tmp/patch.d-env" sh "$patchfile" || exit 1
-	done < "$tmp/patchfiles"
+		env="$tmp/patch.d-env" sh "$patchfile" ||
+			abort "Script failed: $(basename "$patchfile")"
+	done < patchfiles
 }
 
 # if we moved the parent ramdisk, we should rebuild the embedded one
 build_embedded_ramdisk() {
-	if  [ -d "$ramdisk-root" ]; then
-		print "Building new embedded boot ramdisk..."
-		cd "$ramdisk"
-		find | cpio -o -H newc > "$ramdisk-root/sbin/ramdisk.cpio"
-		rm -rf "$ramdisk"
-		mv "$ramdisk-root" "$ramdisk"
-	fi
+	[ -d "$ramdisk-root" ] || return
+	print "Building new embedded boot ramdisk..."
+	cd "$ramdisk"
+	find | cpio -o -H newc > "$ramdisk-root/sbin/ramdisk.cpio"
+	rm -rf "$ramdisk"
+	mv "$ramdisk-root" "$ramdisk"
 }
 
 # build the new ramdisk
 build_ramdisk() {
-	print "Building new ramdisk..."
+	print "Building new ramdisk ($rdformat)..."
 	cd "$ramdisk"
-	find | cpio -o -H newc | $compress > $tmp/ramdisk-new
+	echo "Listing ramdisk contents by size:"
+	find -type f -exec du -a "{}" + | sort -n | awk '{ total += $1; print } END { print "Total size: "total }'
+	find | cpio -o -H newc | $compress > "$tmp/ramdisk-new"
 }
 
 # build the new boot image
 build_boot() {
-	cd "$split_img"
+	cd "$tmp"
+	print "Building new boot image..."
 	kernel=
-	for image in zImage zImage-dtb Image Image-dtb Image.gz Image.gz-dtb; do
-		if [ -s $tmp/$image ]; then
-			kernel="$tmp/$image"
+	rd=
+	dtb=
+	for image in zImage zImage-dtb Image Image-dtb Image.gz Image.gz-dtb Image.lz4 Image.lz4-dtb; do
+		if [ -s $image ]; then
+			kernel=$image
 			print "Found replacement kernel $image!"
 			break
 		fi
 	done
-	[ "$kernel" ] || kernel="$(ls ./*-zImage)"
-	if [ -s $tmp/ramdisk-new ]; then
-		rd="$tmp/ramdisk-new"
+	if [ -s ramdisk-new ]; then
+		rd=ramdisk-new
 		print "Found replacement ramdisk image!"
-	else
-		rd="$(ls ./*-ramdisk)"
 	fi
-	if [ -s $tmp/dtb.img ]; then
-		dtb="$tmp/dtb.img"
+	if [ -s dtb.img ]; then
+		dtb=dtb.img
 		print "Found replacement device tree image!"
-	else
-		dtb="$(ls ./*-dt)"
 	fi
-	"$bin/mkbootimg" \
-		--kernel "$kernel" \
-		--ramdisk "$rd" \
-		--dt "$dtb" \
-		--second "$(ls ./*-second)" \
-		--cmdline "$(cat ./*-cmdline)" \
-		--board "$(cat ./*-board)" \
-		--base "$(cat ./*-base)" \
-		--pagesize "$(cat ./*-pagesize)" \
-		--kernel_offset "$(cat ./*-kernel_offset)" \
-		--ramdisk_offset "$(cat ./*-ramdisk_offset)" \
-		--second_offset "$(cat ./*-second_offset)" \
-		--tags_offset "$(cat ./*-tags_offset)" \
-		-o $tmp/boot-new.img || {
-			abort "Repacking boot image failed"
-		}
+	"$bin/bootimg" cvf boot-new.img "$split_img" \
+		${kernel:+--kernel "$kernel"} \
+		${rd:+--ramdisk "$rd"} \
+		${dtb:+--dt "$dtb"} \
+		--hash ||
+		abort "Repacking boot image failed"
 }
 
 # append Samsung enforcing tag to prevent warning at boot
@@ -221,13 +221,38 @@ samsung_tag() {
 	fi
 }
 
+# backup old boot image
+backup_boot() {
+	[ "$boot_backup" ] || return
+	print "Backing up original boot image to $boot_backup..."
+	cd "$tmp"
+	mkdir -p "$(dirname "$boot_backup")"
+	cp -f boot.img "$boot_backup"
+}
+
+# verify that the boot image exists and can fit the partition
+verify_size() {
+	print "Verifying boot image size..."
+	cd "$tmp"
+	[ -s boot-new.img ] || abort "New boot image not found!"
+	old_sz=$(wc -c < boot.img)
+	new_sz=$(wc -c < boot-new.img)
+	if [ "$new_sz" -gt "$old_sz" ]; then
+		size_diff=$((new_sz - old_sz))
+		print " Partition size: $old_sz bytes"
+		print "Boot image size: $new_sz bytes"
+		abort "Boot image is $size_diff bytes too large for partition"
+	fi
+}
+
 # write the new boot image to boot block
 write_boot() {
 	print "Writing new boot image to memory..."
+	cd "$tmp"
 	if $use_dd; then
-		dd if="$tmp/boot-new.img" of="$boot_block"
+		dd if=boot-new.img of="$boot_block"
 	else
-		flash_image "$boot_block" "$tmp/boot-new.img"
+		flash_image "$boot_block" boot-new.img
 	fi
 	[ $? = 0 ] || abort "Failed to write boot image! You may need to restore your boot partition"
 }
@@ -255,6 +280,10 @@ build_ramdisk
 build_boot
 
 samsung_tag
+
+verify_size
+
+backup_boot
 
 write_boot
 

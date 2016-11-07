@@ -1,6 +1,11 @@
-VERSION := 2.0
+NAME ?= adb-boot-insecure
 
-ZIP := adb-boot-insecure-$(VERSION).zip
+VERSION ?= 4.1
+
+DATE := $(shell date +'%Y%m%d-%H%M')
+
+ZIP := $(NAME)-$(VERSION).zip
+# ZIP := $(NAME)-$(VERSION)-$(DATE).zip
 
 EXCLUDE := Makefile README.md *.git*
 
@@ -15,5 +20,5 @@ $(ZIP):
 	@echo "Done."
 
 clean:
-	@rm -f "$(ZIP)" "$(ZIP).sha1"
+	@rm -vf "$(NAME)-"*.zip*
 	@echo "Done."
