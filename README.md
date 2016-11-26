@@ -34,6 +34,7 @@ setprop <prop> <value> - set a prop value in default.prop
 delprop <prop> - delete a prop from both default.prop and build.prop
 disable_service <service> - searches init rc files and sets the matching service to disabled
 remove_service <service> - searches init rc files and comments out all references to the matching service
+ueventd_set <device node> <permissions> <chown> <chgrp> - use this to set permissions of /dev nodes
 import_rc <rc file> - adds an init rc file as an import to init.rc, it will be imported last
 ```
 Variables available to patch.d scripts:
