@@ -2,7 +2,7 @@
 
 ## start config variables
 
-tmp=/tmp/no-verity-opt-encrypt
+tmp=/tmp/no-verity-force-encrypt
 bin=$tmp/tools
 ramdisk=$tmp/ramdisk
 ramdisk_patch=$ramdisk-patch
