@@ -9,6 +9,7 @@ console=$(cat /tmp/console)
 cd "$tmp"
 . config.sh
 
+found_prop=false
 [ -f "$default_prop" ] && found_prop=true
 
 print() {
