@@ -221,6 +221,24 @@ samsung_tag() {
 	fi
 }
 
+# sign the boot image with futility if it was a ChromeOS boot image
+sign_chromeos() {
+	[ -f "$split_img/boot.img-chromeos" ] || return
+	print "Signing ChromeOS boot image..."
+	cd "$tmp"
+	mv boot-new.img boot-new-unsigned.img
+	echo " " > empty
+	# sign the new boot image (using AOSP dev kernel test-keys)
+	"$bin/futility" vbutil_kernel \
+		--pack boot-new.img \
+		--vmlinuz boot-new-unsigned.img \
+		--config empty --bootloader empty \
+		--verbose --arch "$arch" --version 1 \
+		--keyblock chromeos/kernel.keyblock \
+		--signprivate chromeos/kernel_data_key.vbprivk \
+		--flags 0x1 || abort "Failed to sign ChromeOS boot image!"
+}
+
 # backup old boot image
 backup_boot() {
 	[ "$boot_backup" ] || return
@@ -280,6 +298,8 @@ build_ramdisk
 build_boot
 
 samsung_tag
+
+sign_chromeos
 
 verify_size
 
