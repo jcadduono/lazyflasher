@@ -1,4 +1,4 @@
-NAME ?= no-verity-opt-encrypt
+NAME ?= twrp-data-fstype-swap
 
 VERSION ?= 5.1
 

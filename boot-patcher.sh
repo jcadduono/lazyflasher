@@ -1,7 +1,7 @@
 #!/sbin/sh
 # LazyFlasher boot image patcher script by jcadduono
 
-tmp=/tmp/no-verity-opt-encrypt
+tmp=/tmp/twrp-data-fstype-swap
 
 console=$(cat /tmp/console)
 [ "$console" ] || console=/proc/$$/fd/1
@@ -51,49 +51,49 @@ find_boot() {
 		else
 			return 1
 		fi
-		print "Found boot partition at: $boot_block"
+		print "Found recovery partition at: $boot_block"
 	}
 	# if we already have boot block set then verify and use it
 	[ "$boot_block" ] && verify_block && return
 	# otherwise, time to go hunting!
 	if [ -f /etc/recovery.fstab ]; then
 		# recovery fstab v1
-		boot_block=$(awk '$1 == "/boot" {print $3}' /etc/recovery.fstab)
+		boot_block=$(awk '$1 == "/recovery" {print $3}' /etc/recovery.fstab)
 		[ "$boot_block" ] && verify_block && return
 		# recovery fstab v2
-		boot_block=$(awk '$2 == "/boot" {print $1}' /etc/recovery.fstab)
+		boot_block=$(awk '$2 == "/recovery" {print $1}' /etc/recovery.fstab)
 		[ "$boot_block" ] && verify_block && return
 	fi
 	for fstab in /fstab.*; do
 		[ -f "$fstab" ] || continue
 		# device fstab v2
-		boot_block=$(awk '$2 == "/boot" {print $1}' "$fstab")
+		boot_block=$(awk '$2 == "/recovery" {print $1}' "$fstab")
 		[ "$boot_block" ] && verify_block && return
 		# device fstab v1
-		boot_block=$(awk '$1 == "/boot" {print $3}' "$fstab")
+		boot_block=$(awk '$1 == "/recovery" {print $3}' "$fstab")
 		[ "$boot_block" ] && verify_block && return
 	done
 	if [ -f /proc/emmc ]; then
 		# emmc layout
-		boot_block=$(awk '$4 == "\"boot\"" {print $1}' /proc/emmc)
+		boot_block=$(awk '$4 == "\"recovery\"" {print $1}' /proc/emmc)
 		[ "$boot_block" ] && boot_block=/dev/block/$(echo "$boot_block" | cut -f1 -d:) && verify_block && return
 	fi
 	if [ -f /proc/mtd ]; then
 		# mtd layout
-		boot_block=$(awk '$4 == "\"boot\"" {print $1}' /proc/mtd)
+		boot_block=$(awk '$4 == "\"recovery\"" {print $1}' /proc/mtd)
 		[ "$boot_block" ] && boot_block=/dev/block/$(echo "$boot_block" | cut -f1 -d:) && verify_block && return
 	fi
 	if [ -f /proc/dumchar_info ]; then
 		# mtk layout
-		boot_block=$(awk '$1 == "/boot" {print $5}' /proc/dumchar_info)
+		boot_block=$(awk '$1 == "/recovery" {print $5}' /proc/dumchar_info)
 		[ "$boot_block" ] && verify_block && return
 	fi
-	abort "Unable to find boot block location"
+	abort "Unable to find recovery block location"
 }
 
 # dump boot and unpack the android boot image
 dump_boot() {
-	print "Dumping & unpacking original boot image..."
+	print "Dumping & unpacking original recovery image..."
 	cd "$tmp"
 	if $use_dd; then
 		dd if="$boot_block" of=boot.img
@@ -187,7 +187,7 @@ build_ramdisk() {
 # build the new boot image
 build_boot() {
 	cd "$tmp"
-	print "Building new boot image..."
+	print "Building new recovery image..."
 	kernel=
 	rd=
 	dtb=
@@ -211,7 +211,7 @@ build_boot() {
 		${rd:+--ramdisk "$rd"} \
 		${dtb:+--dt "$dtb"} \
 		--hash ||
-		abort "Repacking boot image failed"
+		abort "Repacking recovery image failed"
 }
 
 # append Samsung enforcing tag to prevent warning at boot
@@ -239,40 +239,31 @@ sign_chromeos() {
 		--flags 0x1 || abort "Failed to sign ChromeOS boot image!"
 }
 
-# backup old boot image
-backup_boot() {
-	[ "$boot_backup" ] || return
-	print "Backing up original boot image to $boot_backup..."
-	cd "$tmp"
-	mkdir -p "$(dirname "$boot_backup")"
-	cp -f boot.img "$boot_backup"
-}
-
 # verify that the boot image exists and can fit the partition
 verify_size() {
-	print "Verifying boot image size..."
+	print "Verifying recovery image size..."
 	cd "$tmp"
-	[ -s boot-new.img ] || abort "New boot image not found!"
+	[ -s boot-new.img ] || abort "New recovery image not found!"
 	old_sz=$(wc -c < boot.img)
 	new_sz=$(wc -c < boot-new.img)
 	if [ "$new_sz" -gt "$old_sz" ]; then
 		size_diff=$((new_sz - old_sz))
 		print " Partition size: $old_sz bytes"
-		print "Boot image size: $new_sz bytes"
-		abort "Boot image is $size_diff bytes too large for partition"
+		print "Recovery image size: $new_sz bytes"
+		abort "Recovery image is $size_diff bytes too large for partition"
 	fi
 }
 
 # write the new boot image to boot block
 write_boot() {
-	print "Writing new boot image to memory..."
+	print "Writing new recovery image to memory..."
 	cd "$tmp"
 	if $use_dd; then
 		dd if=boot-new.img of="$boot_block"
 	else
 		flash_image "$boot_block" boot-new.img
 	fi
-	[ $? = 0 ] || abort "Failed to write boot image! You may need to restore your boot partition"
+	[ $? = 0 ] || abort "Failed to write recovery image! You may need to restore your recovery partition"
 }
 
 ## end install methods

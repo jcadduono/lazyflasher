@@ -1,7 +1,7 @@
 #!/sbin/sh
 # LazyFlasher installer backend
 
-tmp=/tmp/no-verity-opt-encrypt
+tmp=/tmp/twrp-data-fstype-swap
 
 if [ "$3" ]; then
 	zip=$3
@@ -47,11 +47,11 @@ setperm() {
 	find "$3" -type f -exec chmod "$2" {} \;
 }
 
-print "#######################################"
-print "#   dm-verity and forced encryption   #"
-print "#        disabler by jcadduono        #"
-print "#             version 5.1             #"
-print "#######################################"
+print "########################################"
+print "#  TWRP /data filesystem type swapper  #"
+print "#           (ext4 <--> f2fs)           #"
+print "#      by jcadduono - version 5.1      #"
+print "########################################"
 
 # Unpack the installer
 [ "$zip" ] && {
@@ -64,10 +64,10 @@ cd "$tmp"
 
 setperm 0755 0755 "$bin"
 
-print "Running boot image patcher..."
+print "Running recovery image patcher..."
 sh boot-patcher.sh || abort
 
-print "Boot image patching complete"
+print "Recovery image patching complete"
 
 cleanup
 print "Done installing!"

@@ -1,0 +1,71 @@
+#!/sbin/sh
+
+. "$env"
+
+fs=/data
+
+# get_fstype <fstab> <partition> (sets $fstype)
+get_fstype() {
+	fstype=$(awk -vpart="$2" '
+		$1 == part { print $2; exit }
+	' "$1")
+	[ "$fstype" ]
+}
+
+# set_fstype <fstab> <partition> <fstype>
+set_fstype() {
+	awk -vpart="$2" -vfstype="$3" '
+		$1 == part { $2 = fstype; found = 1 }
+		{ print }
+		END { exit !found }
+	' "$1" > "$1-"
+
+	if [ $? = 0 ]; then
+		replace_file "$1" "$1-"
+		print "New filesystem type: $3"
+		return 0
+	fi
+
+	rm -f "$1-"
+	print "Failed to find $2 in $1"
+	return 1
+}
+
+print "Swapping $fs filesystem type..."
+
+found_fstab=false
+changed_fstype=false
+
+for fstab in etc/*.fstab; do
+	[ -f "$fstab" ] || continue
+	found_fstab=true
+
+	print "Found recovery fstab: $fstab"
+
+	get_fstype "$fstab" "$fs" || continue
+
+	print "Current filesystem type: $fstype"
+	case $fstype in
+	ext4)
+		set_fstype "$fstab" "$fs" f2fs && changed_fstype=true
+		;;
+	f2fs)
+		set_fstype "$fstab" "$fs" ext4 && changed_fstype=true
+		;;
+	*)
+		print "Unknown filesystem type: $fstype"
+		;;
+	esac
+done
+
+$found_fstab || {
+	print "Unable to find the recovery fstab!"
+	exit 1
+}
+
+$changed_fstype || {
+	print "No changes made to filesystem type!"
+	exit 1
+}
+
+exit 0
