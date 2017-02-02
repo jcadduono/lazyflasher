@@ -33,7 +33,7 @@ found_sepolicy=false
 found_file_contexts=false
 [ -f "$file_contexts" ] && found_file_contexts=true
 
-if $found_sepolicy; then
+if $found_sepolicy && [ -x "$seinject" ]; then
 	if   "$seinject" -e -c filesystem -P "$sepolicy" &&
 	   ! "$seinject-N" -e -c filesystem -P "$sepolicy"
 	then
@@ -210,4 +210,4 @@ seadd() {
 	"$seinject" -P "$sepolicy" "$@"
 }
 
-cd "$ramdisk"
+cd "$ramdisk" || abort "Unable to enter ramdisk directory!"
