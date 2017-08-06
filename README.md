@@ -37,17 +37,13 @@ remove_service <service> - searches init rc files and comments out all reference
 ueventd_set <device node> <permissions> <chown> <chgrp> - use this to set permissions of /dev nodes
 context_set <file path regex> <context> - use this to set selinux contexts of file paths
 import_rc <rc file> - adds an init rc file as an import to init.rc, it will be imported last
-secheck [-s <source type>] [-c <class>] - check if a given context label or class exists in the sepolicy
-seadd [-Z / -z <domain> | -s <source type>] [-t <target type>] [-c <class>] [-z <domain>] [-p <perm,list>] [-a <type attr>] - add a new policy rule/domain to the sepolicy
 ```
 Variables available to patch.d scripts:
 ```
 $found_prop - true if default.prop exists in the ramdisk
 $found_build_prop - true if build.prop exists in /system
 $found_ueventd - true if ueventd.rc exists in the ramdisk
-$found_sepolicy - true if sepolicy exists in the ramdisk
 $found_file_contexts - true if file_contexts exists in the ramdisk
-$android_api - Android API version estimated from sepolicy rules (19 <= K, 21 = L, 23 = M, 24 >= N)
 $tmp - full path to installation extraction root (ex. /tmp/kernel-flasher)
 $ramdisk - full path to extracted ramdisk root (current directory of patch.d scripts)
 $ramdisk_patch - full path to new ramdisk files (applied automatically over the current ramdisk)
