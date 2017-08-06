@@ -1,4 +1,4 @@
-NAME ?= no-verity-opt-encrypt
+NAME ?= no-verity-force-encrypt
 
 VERSION ?= 5.1
 

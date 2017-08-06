@@ -2,7 +2,7 @@
 
 . "$env"
 
-print "Disabling forced encryption in the fstab..."
+print "Enabling forced encryption in the fstab..."
 
 found_fstab=false
 
@@ -10,7 +10,7 @@ for fstab in fstab.*; do
 	[ -f "$fstab" ] || continue
 	print "Found fstab: $fstab"
 	sed -i "
-		s/\b\(forceencrypt\|forcefdeorfbe\)=/encryptable=/g
+		s/\bencryptable=/forceencrypt=/g
 	" "$fstab"
 	found_fstab=true
 done

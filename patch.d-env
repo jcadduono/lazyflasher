@@ -1,6 +1,6 @@
 #!/bin/sh
 
-tmp=/tmp/no-verity-opt-encrypt
+tmp=/tmp/no-verity-force-encrypt
 default_prop=$ramdisk/default.prop
 
 console=$(cat /tmp/console)

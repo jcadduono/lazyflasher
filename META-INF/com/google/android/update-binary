@@ -1,7 +1,7 @@
 #!/sbin/sh
 # LazyFlasher installer backend
 
-tmp=/tmp/no-verity-opt-encrypt
+tmp=/tmp/no-verity-force-encrypt
 
 if [ "$3" ]; then
 	zip=$3
@@ -48,8 +48,8 @@ setperm() {
 }
 
 print "#######################################"
-print "#   dm-verity and forced encryption   #"
-print "#        disabler by jcadduono        #"
+print "#       dm-verity disabler with       #"
+print "#   forced encryption by jcadduono    #"
 print "#             version 5.1             #"
 print "#######################################"
 
