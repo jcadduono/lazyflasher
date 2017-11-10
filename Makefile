@@ -1,6 +1,6 @@
 NAME ?= no-verity-opt-encrypt
 
-VERSION ?= 5.1
+VERSION ?= 5.2
 
 DATE := $(shell date +'%Y%m%d-%H%M')
 
