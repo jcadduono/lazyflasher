@@ -1,7 +1,7 @@
 #!/sbin/sh
 # Kernel Flasher installer backend
 
-tmp=/tmp/kernel-flasher
+tmp=/tmp/kernel-testing-reboot
 
 if [ "$3" ]; then
 	zip=$3

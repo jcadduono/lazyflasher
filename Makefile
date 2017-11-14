@@ -1,4 +1,4 @@
-NAME ?= kernel-flasher
+NAME ?= kernel-testing-reboot
 
 VERSION ?= 5.2
 

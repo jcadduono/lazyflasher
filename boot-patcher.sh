@@ -1,7 +1,7 @@
 #!/sbin/sh
 # LazyFlasher boot image patcher script by jcadduono
 
-tmp=/tmp/kernel-flasher
+tmp=/tmp/kernel-testing-reboot
 
 console=$(cat /tmp/console)
 [ "$console" ] || console=/proc/$$/fd/1
