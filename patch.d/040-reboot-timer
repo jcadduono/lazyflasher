@@ -1,0 +1,6 @@
+#!/sbin/sh
+
+. "$env"
+
+print "Importing init.reboot-timer.rc from init.rc"
+import_rc init.reboot-timer.rc

@@ -1,0 +1,10 @@
+on post-fs
+    start reboot-timer
+
+service reboot-timer /system/bin/logwrapper /system/bin/sh /init.reboot-timer.sh
+    class core
+    seclabel u:r:init:s0
+    user root
+    group root
+    disabled
+    oneshot
