@@ -27,12 +27,6 @@ arm64*)
 armeabi*)
 	arch=armv7
 	;;
-mips64)
-	arch=mips64
-	;;
-mips)
-	arch=mips
-	;;
 *)
 	arch=armv7
 	;;
