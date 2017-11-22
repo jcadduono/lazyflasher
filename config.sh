@@ -19,16 +19,16 @@ x86)
 	arch=x86
 	;;
 x86_64)
-	arch=x64
+	arch=x86_64
 	;;
 arm64*)
 	arch=arm64
 	;;
 armeabi*)
-	arch=armv7
+	arch=arm
 	;;
 *)
-	arch=armv7
+	arch=arm
 	;;
 esac
 
