@@ -27,7 +27,7 @@ for fstab in fstab.*; do
 			if ($5 == "") $5 = "defaults"
 		}
 		{ print }
-	' > "$fstab-"
+	' "$fstab" > "$fstab-"
 	replace_file "$fstab" "$fstab-"
 	found_fstab=true
 done
