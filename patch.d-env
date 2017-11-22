@@ -26,6 +26,14 @@ abort() {
 	exit 1
 }
 
+# replace_file <old file> <new file> (preserving metadata)
+# replace a file, preserving metadata (using cat)
+replace_file() {
+	cat "$2" > "$1" || return
+	rm -f "$2"
+}
+
+# set a prop value in default.prop
 # setprop <prop> <value>
 setprop() {
 	$found_prop || return
