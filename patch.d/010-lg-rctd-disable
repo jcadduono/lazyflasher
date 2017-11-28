@@ -1,0 +1,9 @@
+#!/sbin/sh
+
+. "$env"
+
+print "Removing LG root checker rctd service"
+rm -f sbin/rctd
+remove_service rctd
+
+exit 0

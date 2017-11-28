@@ -1,10 +1,8 @@
-NAME ?= kernel-flasher
+NAME ?= lg-rctd-disabler
 
-VERSION ?= 6.0
+VERSION ?= 1.0
 
-DATE := $(shell date +'%Y%m%d-%H%M')
-
-ZIP := $(NAME)-$(VERSION)-$(DATE).zip
+ZIP := $(NAME)-$(VERSION).zip
 
 EXCLUDE := Makefile README.md *.git* "$(NAME)-"*.zip*
 

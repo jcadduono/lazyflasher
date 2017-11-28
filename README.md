@@ -48,7 +48,7 @@ $found_ueventd - true if ueventd.rc exists in the ramdisk
 $found_sepolicy - true if sepolicy exists in the ramdisk
 $found_file_contexts - true if file_contexts exists in the ramdisk
 $android_api - Android API version estimated from sepolicy rules (19 <= K, 21 = L, 23 = M, 24 >= N)
-$tmp - full path to installation extraction root (ex. /tmp/kernel-flasher)
+$tmp - full path to installation extraction root (ex. /tmp/lg-rctd-disabler)
 $ramdisk - full path to extracted ramdisk root (current directory of patch.d scripts)
 $ramdisk_patch - full path to new ramdisk files (applied automatically over the current ramdisk)
 $split_img - full path to extracted contents of boot image (including cmdline)

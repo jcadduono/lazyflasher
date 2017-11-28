@@ -1,7 +1,7 @@
 #!/sbin/sh
 # Kernel Flasher installer backend
 
-tmp=/tmp/kernel-flasher
+tmp=/tmp/lg-rctd-disabler
 
 if [ "$3" ]; then
 	zip=$3
@@ -60,11 +60,10 @@ umount() {
 	/sbin/busybox umount "$1"
 }
 
-print "#######################################"
-print "#           kernel flasher            #"
-print "#      by jcadduono, version 6.0      #"
-print "#   add your own intro message here!  #"
-print "#######################################"
+print "########################################"
+print "#    LG root checker service (rctd)    #"
+print "#  disabler by jcadduono, version 1.0  #"
+print "########################################"
 
 # Unpack the installer
 [ "$zip" ] && {
