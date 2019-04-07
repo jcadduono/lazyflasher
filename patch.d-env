@@ -8,7 +8,7 @@ console=$(cat /tmp/console)
 cd "$tmp"
 . config.sh
 
-cmdline=$split_img/boot.img-cmdline
+cmdline=$split_img/cmdline
 default_prop=$ramdisk/default.prop
 build_prop=/system/build.prop
 ueventd=$ramdisk/ueventd.rc
