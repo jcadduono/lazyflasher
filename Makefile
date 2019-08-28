@@ -1,6 +1,6 @@
 NAME ?= no-verity-opt-encrypt
 
-VERSION ?= 6.0
+VERSION ?= $(shell awk '$$1 == "print" && $$3 == "version" { print $$4 }' META-INF/com/google/android/update-binary)
 
 DATE := $(shell date +'%Y%m%d-%H%M')
 
